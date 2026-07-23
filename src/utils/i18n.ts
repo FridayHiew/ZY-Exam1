@@ -9,14 +9,14 @@ export const TRANSLATIONS = {
     sloganEn: 'Learn smart, have fun!',
     
     // Navigation
-    dashboard: '🏠 Home',
-    library: '📚 My Books',
-    import: '📥 Add Book',
-    analytics: '📊 My Progress',
-    settings: '⚙️ Settings',
-    adminGenerator: '🔑 License Tool',
-    backupRestore: '💾 Backup & Restore',
-    profile: '👤 My Profile',
+    dashboard: 'Home',
+    library: 'My Books',
+    import: 'Add Book',
+    analytics: 'My Progress',
+    settings: 'Settings',
+    adminGenerator: 'License Tool',
+    backupRestore: 'Backup & Restore',
+    profile: 'My Profile',
     
     // License
     activeLicense: '✅ License Active',
@@ -267,14 +267,14 @@ export const TRANSLATIONS = {
     sloganEn: 'Belajar dengan bijak, berseronok!',
     
     // Navigation
-    dashboard: '🏠 Utama',
-    library: '📚 Buku Saya',
-    import: '📥 Tambah Buku',
-    analytics: '📊 Kemajuan Saya',
-    settings: '⚙️ Tetapan',
-    adminGenerator: '🔑 Alat Lesen',
-    backupRestore: '💾 Sandaran & Pulih',
-    profile: '👤 Profil Saya',
+    dashboard: 'Utama',
+    library: 'Buku Saya',
+    import: 'Tambah Buku',
+    analytics: 'Kemajuan Saya',
+    settings: 'Tetapan',
+    adminGenerator: 'Alat Lesen',
+    backupRestore: 'Sandaran & Pulih',
+    profile: 'Profil Saya',
     
     // License
     activeLicense: '✅ Lesen Aktif',
@@ -525,14 +525,14 @@ export const TRANSLATIONS = {
     sloganEn: '快乐学习，智慧成长！',
     
     // Navigation
-    dashboard: '🏠 首页',
-    library: '📚 我的书本',
-    import: '📥 添加书本',
-    analytics: '📊 学习进度',
-    settings: '⚙️ 设置',
-    adminGenerator: '🔑 许可证工具',
-    backupRestore: '💾 备份与恢复',
-    profile: '👤 我的资料',
+    dashboard: '首页',
+    library: '我的书本',
+    import: '添加书本',
+    analytics: '学习进度',
+    settings: '设置',
+    adminGenerator: '许可证工具',
+    backupRestore: '备份与恢复',
+    profile: '我的资料',
     
     // License
     activeLicense: '✅ 许可证已激活',
