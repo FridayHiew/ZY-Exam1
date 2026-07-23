@@ -176,7 +176,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <Folder className="w-4 h-4 text-[#5A6D5B]" />
           <select
             value={selectedGroupFilter}
             onChange={(e) => setSelectedGroupFilter(e.target.value)}
