@@ -7,7 +7,7 @@ const STORAGE_KEY = 'yiga_app_zy_v1';  // 原來是 'oktp_app_state_v1'
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh',
-  theme: 'dark',
+  theme: 'Light',
   fontSize: 'medium',
   securityEnabled: false,
   pinCode: undefined,
@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const DEFAULT_PROFILE: UserProfile = {
-  displayName: '菜鳥',
+  displayName: '小寶',
   avatarSeed: 'learner1',
   createdAt: new Date().toISOString(),
 };

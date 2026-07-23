@@ -34,9 +34,9 @@ export const TRANSLATIONS = {
     
     // Dashboard Stats
     totalCollections: 'Books',
-    totalQuestions: 'Questions',
+    totalQuestions: 'Qns',
     questionsAnswered: 'Answered',
-    overallAccuracy: 'Accuracy',
+    overallAccuracy: 'Acc',
     streak: 'Streak',
     days: 'days',
     
@@ -294,7 +294,7 @@ export const TRANSLATIONS = {
     totalCollections: 'Buku',
     totalQuestions: 'Soalan',
     questionsAnswered: 'Dijawab',
-    overallAccuracy: 'Ketepatan',
+    overallAccuracy: 'Betul',
     streak: 'Rekod',
     days: 'hari',
     
