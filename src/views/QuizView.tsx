@@ -180,7 +180,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
     const correctCount = records.filter((r) => r.isCorrect).length;
     const totalQuestions = questions.length;
     const scorePercentage = Math.round((correctCount / Math.max(1, totalQuestions)) * 100);
-    const passMark = config.passMarkPercentage || appState.settings.defaultPassMark || 70;
+    const passMark = config.passMarkPercentage || appState.settings.defaultPassMark || 60;
     const passed = scorePercentage >= passMark;
 
     const result: QuizResult = {
@@ -260,10 +260,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
             {lang === 'zh'
-              ? `及格分数要求: ${config.passMarkPercentage || 70}%`
+              ? `及格分数要求: ${config.passMarkPercentage || 60}%`
               : lang === 'ms'
-              ? `Keperluan markah lulus: ${config.passMarkPercentage || 70}%`
-              : `Pass mark requirement: ${config.passMarkPercentage || 70}%`}
+              ? `Keperluan markah lulus: ${config.passMarkPercentage || 60}%`
+              : `Pass mark requirement: ${config.passMarkPercentage || 60}%`}
           </p>
 
           <div className="grid grid-cols-3 gap-3 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl mb-6 text-xs">
@@ -503,7 +503,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
               showExplanation.get(currentIndex);
 
             let optionStyle =
-              'bg-[#F5F2EA] dark:bg-[#2D322D] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] hover:bg-[#EAE5D8]';
+                'bg-[#F5F2EA] dark:bg-[#2D322D] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] hover:bg-[#EAE5D8]';
 
             if (isSelected) {
               optionStyle =
@@ -513,10 +513,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
             if (isRevealed) {
               if (isCorrectOption) {
                 optionStyle =
-                  'bg-[#5A6D5B]/20 border-[#5A6D5B] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold';
+                'bg-blue-100 dark:bg-blue-900/40 border-blue-400 dark:border-blue-500 text-blue-800 dark:text-blue-200 font-bold shadow-md ring-2 ring-blue-300 dark:ring-blue-500';
               } else if (isSelected && !isCorrectOption) {
                 optionStyle =
-                  'bg-rose-100/80 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold';
+                'bg-rose-100/80 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold';
               }
             }
 
