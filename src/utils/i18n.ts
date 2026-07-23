@@ -30,7 +30,7 @@ export const TRANSLATIONS = {
     daysRemaining: 'days remaining',
     currentLicense: 'Current License:',
     manageLicense: 'Manage License',
-    licenseStatus: '🔑 License Status',
+    licenseStatus: 'License Status',
     
     // Dashboard Stats
     totalCollections: 'Books',
@@ -43,13 +43,13 @@ export const TRANSLATIONS = {
     // Quick Actions
     quickStartPractice: '🚀 Start Learning!',
     startExam: '📝 Take Quiz',
-    weakTopicsRecommendation: '💪 Practice Weak Spots',
+    weakTopicsRecommendation: 'Practice Weak Spots',
     practiceWeakTopics: '🎯 Practice',
-    noWeakTopics: '🌟 Amazing! You\'re doing great in all subjects!',
+    noWeakTopics: 'Amazing! You\'re doing great in all subjects!',
     
     // Welcome
-    welcomeBack: '👋 Welcome back',
-    activeLearner: '🌟 Super Learner',
+    welcomeBack: 'Welcome back',
+    activeLearner: 'Super Learner',
     streakDays: 'day streak',
     readyDailyTraining: 'Ready to learn something new today? 🎉',
     
@@ -109,9 +109,9 @@ export const TRANSLATIONS = {
     incorrectPin: '❌ Wrong PIN! Try again.',
     
     // Theme
-    lightMode: '☀️ Light',
-    darkMode: '🌙 Dark',
-    systemMode: '💻 Auto',
+    lightMode: 'Light',
+    darkMode: 'Dark',
+    systemMode: 'Auto',
     language: '🌐 Language',
     theme: '🎨 Theme',
     fontSize: '📏 Text Size',
@@ -124,8 +124,8 @@ export const TRANSLATIONS = {
     unlock: '🔓 Unlock',
     
     // Backup
-    exportBackup: '💾 Save Backup',
-    restoreBackup: '📂 Restore Backup',
+    exportBackup: 'Save Backup',
+    restoreBackup: 'Restore Backup',
     clearData: '🗑️ Reset All',
     backupTitle: '💾 Backup & Restore',
     backupDesc: 'Keep your learning progress safe!',
@@ -138,7 +138,7 @@ export const TRANSLATIONS = {
     restoreSuccess: '🎉 Restored successfully! {count} books and {history} quiz records loaded!',
     backupError: '❌ Restore failed: {error}',
     invalidBackup: 'This file doesn\'t look like a valid backup.',
-    tipTitle: '💡 Tip:',
+    tipTitle: 'Tip:',
     tipDesc: 'Save a backup regularly to protect your hard work! Your backup includes all your books, questions, quiz history, and settings.',
     
     // Admin License Generator
@@ -148,8 +148,8 @@ export const TRANSLATIONS = {
     targetDeviceId: '📱 Device ID *',
     myDevice: '📱 Mine',
     licenseTypeLabel: '📋 License Type',
-    userLicense: '👤 User',
-    adminLicense: '🛡️ Admin',
+    userLicense: 'User',
+    adminLicense: 'Admin',
     vipLicense: '⭐ VIP',
     validityDuration: '📅 Duration',
     months: 'months',
@@ -169,14 +169,14 @@ export const TRANSLATIONS = {
     copy: '📋 Copy',
     
     // License Activation
-    licenseActivation: '🔑 Activate License',
+    licenseActivation: 'Activate License',
     licenseDesc: 'Enter your license key to unlock all features!',
     uniqueDeviceID: '📱 Your Device ID',
     provideDeviceID: 'Give this to your teacher or admin to get a license key.',
     enterLicenseKey: '🔑 Enter License Key',
     pasteLicenseKey: 'Paste your license key here...',
     verifyActivate: '✅ Activate Now',
-    deleteLicense: '🗑️ Remove License',
+    deleteLicense: 'Remove License',
     licenseActive: '✅ Active',
     holder: '👤 Holder',
     status: '📊 Status',
@@ -197,11 +197,11 @@ export const TRANSLATIONS = {
     
     // Analytics - Additional
     totalSessions: '📝 Total Sessions',
-    subjectGroupPerformance: '📁 Subject Groups',
-    difficultyDistribution: '📊 Difficulty Levels',
-    beginner: '🌱 Beginner',
-    intermediate: '🌿 Intermediate',
-    master: '🌳 Master',
+    subjectGroupPerformance: 'Subject Groups',
+    difficultyDistribution: 'Difficulty Levels',
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    master: 'Master',
     beginnerDesc: 'Basic concepts and definitions',
     intermediateDesc: 'Practical application and workflows',
     masterDesc: 'Expert analysis and case studies',
@@ -224,18 +224,18 @@ export const TRANSLATIONS = {
     // Import
     importTitle: '📥 Add New Book',
     importDesc: 'Upload a JSON or ZIP file to add fun questions!',
-    dropFileHere: '📤 Drop your file here!',
+    dropFileHere: 'Drop your file here!',
     supportsJsonZip: 'Supports .json or .zip files',
-    chooseFile: '📂 Choose File',
-    aiHelper: '🤖 AI Helper',
+    chooseFile: 'Choose File',
+    aiHelper: 'AI Helper',
     aiHelperDesc: 'Ask AI to create questions for you!',
-    easy: '🌱 Easy',
-    medium: '🌿 Medium',
-    hard: '🌳 Hard',
-    copyPrompt: '📋 Copy Prompt',
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    copyPrompt: 'Copy Prompt',
     copiedToClipboard: '✅ Copied!',
     needTemplate: '📝 Need a template?',
-    downloadTemplate: '📄 Download Template',
+    downloadTemplate: 'Download Template',
     importSuccess: '🎉 Success! Added {count} questions to "{name}"!',
     goToLibrary: '📚 See My Books',
     
@@ -288,7 +288,7 @@ export const TRANSLATIONS = {
     daysRemaining: 'hari berbaki',
     currentLicense: 'Lesen Semasa:',
     manageLicense: 'Urus Lesen',
-    licenseStatus: '🔑 Status Lesen',
+    licenseStatus: 'Status Lesen',
     
     // Dashboard Stats
     totalCollections: 'Buku',
@@ -301,13 +301,13 @@ export const TRANSLATIONS = {
     // Quick Actions
     quickStartPractice: '🚀 Mula Belajar!',
     startExam: '📝 Buat Kuiz',
-    weakTopicsRecommendation: '💪 Latih Topik Lemah',
+    weakTopicsRecommendation: 'Latih Topik Lemah',
     practiceWeakTopics: '🎯 Latih',
-    noWeakTopics: '🌟 Hebat! Anda mahir dalam semua topik!',
+    noWeakTopics: 'Hebat! Anda mahir dalam semua topik!',
     
     // Welcome
-    welcomeBack: '👋 Selamat kembali',
-    activeLearner: '🌟 Pelajar Cemerlang',
+    welcomeBack: 'Selamat kembali',
+    activeLearner: 'Pelajar Cemerlang',
     streakDays: 'hari berturut-turut',
     readyDailyTraining: 'Sedia untuk belajar perkara baru hari ini? 🎉',
     
@@ -367,9 +367,9 @@ export const TRANSLATIONS = {
     incorrectPin: '❌ PIN salah! Cuba lagi.',
     
     // Theme
-    lightMode: '☀️ Cerah',
-    darkMode: '🌙 Gelap',
-    systemMode: '💻 Auto',
+    lightMode: 'Cerah',
+    darkMode: 'Gelap',
+    systemMode: 'Auto',
     language: '🌐 Bahasa',
     theme: '🎨 Tema',
     fontSize: '📏 Saiz Teks',
@@ -382,8 +382,8 @@ export const TRANSLATIONS = {
     unlock: '🔓 Buka',
     
     // Backup
-    exportBackup: '💾 Simpan Sandaran',
-    restoreBackup: '📂 Pulih Sandaran',
+    exportBackup: 'Simpan Sandaran',
+    restoreBackup: 'Pulih Sandaran',
     clearData: '🗑️ Set Semula',
     backupTitle: '💾 Sandaran & Pulih',
     backupDesc: 'Pastikan kemajuan pembelajaran anda selamat!',
@@ -396,7 +396,7 @@ export const TRANSLATIONS = {
     restoreSuccess: '🎉 Pemulihan berjaya! {count} buku dan {history} rekod kuiz dimuatkan!',
     backupError: '❌ Pemulihan gagal: {error}',
     invalidBackup: 'Fail ini bukan sandaran yang sah.',
-    tipTitle: '💡 Tip:',
+    tipTitle: 'Tip:',
     tipDesc: 'Simpan sandaran secara berkala untuk lindungi usaha anda! Sandaran termasuk semua buku, soalan, sejarah kuiz, dan tetapan.',
     
     // Admin License Generator
@@ -406,8 +406,8 @@ export const TRANSLATIONS = {
     targetDeviceId: '📱 ID Peranti *',
     myDevice: '📱 Peranti Saya',
     licenseTypeLabel: '📋 Jenis Lesen',
-    userLicense: '👤 Pengguna',
-    adminLicense: '🛡️ Admin',
+    userLicense: 'Pengguna',
+    adminLicense: 'Admin',
     vipLicense: '⭐ VIP',
     validityDuration: '📅 Tempoh',
     months: 'bulan',
@@ -427,7 +427,7 @@ export const TRANSLATIONS = {
     copy: '📋 Salin',
     
     // License Activation
-    licenseActivation: '🔑 Aktifkan Lesen',
+    licenseActivation: 'Aktifkan Lesen',
     licenseDesc: 'Masukkan kunci lesen untuk buka semua ciri!',
     uniqueDeviceID: '📱 ID Peranti Anda',
     provideDeviceID: 'Berikan ini kepada guru atau admin untuk dapatkan kunci lesen.',
@@ -455,11 +455,11 @@ export const TRANSLATIONS = {
     
     // Analytics - Additional
     totalSessions: '📝 Jumlah Sesi',
-    subjectGroupPerformance: '📁 Kumpulan Subjek',
-    difficultyDistribution: '📊 Tahap Kesukaran',
-    beginner: '🌱 Pemula',
-    intermediate: '🌿 Pertengahan',
-    master: '🌳 Mahir',
+    subjectGroupPerformance: 'Kumpulan Subjek',
+    difficultyDistribution: 'Tahap Kesukaran',
+    beginner: 'Pemula',
+    intermediate: 'Pertengahan',
+    master: 'Mahir',
     beginnerDesc: 'Konsep asas dan definisi',
     intermediateDesc: 'Aplikasi praktikal dan aliran kerja',
     masterDesc: 'Analisis pakar dan kajian kes',
@@ -482,15 +482,15 @@ export const TRANSLATIONS = {
     // Import
     importTitle: '📥 Tambah Buku Baru',
     importDesc: 'Muat naik fail JSON atau ZIP untuk tambah soalan!',
-    dropFileHere: '📤 Letakkan fail anda di sini!',
+    dropFileHere: 'Letakkan fail anda di sini!',
     supportsJsonZip: 'Menyokong fail .json atau .zip',
-    chooseFile: '📂 Pilih Fail',
-    aiHelper: '🤖 Pembantu AI',
+    chooseFile: 'Pilih Fail',
+    aiHelper: 'Pembantu AI',
     aiHelperDesc: 'Minta AI cipta soalan untuk anda!',
-    easy: '🌱 Mudah',
-    medium: '🌿 Sederhana',
-    hard: '🌳 Susah',
-    copyPrompt: '📋 Salin Prompt',
+    easy: 'Mudah',
+    medium: 'Sederhana',
+    hard: 'Susah',
+    copyPrompt: 'Salin Prompt',
     copiedToClipboard: '✅ Disalin!',
     needTemplate: '📝 Perlukan template?',
     downloadTemplate: '📄 Muat Turun Template',
@@ -538,7 +538,7 @@ export const TRANSLATIONS = {
     activeLicense: '✅ 许可证已激活',
     licenseExpired: '⏰ 许可证已过期',
     gracePeriod: '🕐 7天宽限期',
-    activateLicense: '🔓 激活许可证',
+    activateLicense: '激活许可证',
     deviceId: '📱 设备编号',
     licenseType: '📋 许可证类型',
     expiresOn: '📅 到期日期',
@@ -546,7 +546,7 @@ export const TRANSLATIONS = {
     daysRemaining: '天剩余',
     currentLicense: '当前许可证：',
     manageLicense: '管理许可证',
-    licenseStatus: '🔑 许可证状态',
+    licenseStatus: '许可证状态',
     
     // Dashboard Stats
     totalCollections: '书本数',
@@ -559,13 +559,13 @@ export const TRANSLATIONS = {
     // Quick Actions
     quickStartPractice: '🚀 开始学习！',
     startExam: '📝 做测验',
-    weakTopicsRecommendation: '💪 练习薄弱点',
+    weakTopicsRecommendation: '练习薄弱点',
     practiceWeakTopics: '🎯 去练习',
-    noWeakTopics: '🌟 太棒了！所有科目都掌握得很好！',
+    noWeakTopics: '太棒了！所有科目都掌握得很好！',
     
     // Welcome
-    welcomeBack: '👋 欢迎回来',
-    activeLearner: '🌟 小学霸',
+    welcomeBack: '欢迎回来',
+    activeLearner: '小学霸',
     streakDays: '天连续学习',
     readyDailyTraining: '今天准备好学习新知识了吗？🎉',
     
@@ -625,9 +625,9 @@ export const TRANSLATIONS = {
     incorrectPin: '❌ PIN码错误，请重试。',
     
     // Theme
-    lightMode: '☀️ 浅色',
-    darkMode: '🌙 深色',
-    systemMode: '💻 自动',
+    lightMode: '浅色',
+    darkMode: '深色',
+    systemMode: '自动',
     language: '🌐 语言',
     theme: '🎨 主题',
     fontSize: '📏 字体大小',
@@ -640,8 +640,8 @@ export const TRANSLATIONS = {
     unlock: '🔓 解锁',
     
     // Backup
-    exportBackup: '💾 保存备份',
-    restoreBackup: '📂 恢复备份',
+    exportBackup: '保存备份',
+    restoreBackup: '恢复备份',
     clearData: '🗑️ 重置所有',
     backupTitle: '💾 备份与恢复',
     backupDesc: '保护你的学习进度！',
@@ -654,7 +654,7 @@ export const TRANSLATIONS = {
     restoreSuccess: '🎉 恢复成功！加载了 {count} 本书和 {history} 条测验记录！',
     backupError: '❌ 恢复失败：{error}',
     invalidBackup: '这个文件不是有效的备份文件。',
-    tipTitle: '💡 提示：',
+    tipTitle: '提示：',
     tipDesc: '定期保存备份，保护你的学习成果！备份包括所有书本、题目、测验历史和设置。',
     
     // Admin License Generator
@@ -664,8 +664,8 @@ export const TRANSLATIONS = {
     targetDeviceId: '📱 设备编号 *',
     myDevice: '📱 我的设备',
     licenseTypeLabel: '📋 许可证类型',
-    userLicense: '👤 用户',
-    adminLicense: '🛡️ 管理员',
+    userLicense: '用户',
+    adminLicense: '管理员',
     vipLicense: '⭐ VIP',
     validityDuration: '📅 有效期',
     months: '个月',
@@ -685,14 +685,14 @@ export const TRANSLATIONS = {
     copy: '📋 复制',
     
     // License Activation
-    licenseActivation: '🔑 激活许可证',
+    licenseActivation: '激活许可证',
     licenseDesc: '输入许可证密钥解锁所有功能！',
     uniqueDeviceID: '📱 您的设备编号',
     provideDeviceID: '将此编号提供给老师或管理员获取许可证密钥。',
     enterLicenseKey: '🔑 输入许可证密钥',
     pasteLicenseKey: '在此粘贴许可证密钥...',
     verifyActivate: '✅ 立即激活',
-    deleteLicense: '🗑️ 移除许可证',
+    deleteLicense: '移除许可证',
     licenseActive: '✅ 已激活',
     holder: '👤 持有人',
     status: '📊 状态',
@@ -713,11 +713,11 @@ export const TRANSLATIONS = {
     
     // Analytics - Additional
     totalSessions: '📝 测试次数',
-    subjectGroupPerformance: '📁 学科分组',
-    difficultyDistribution: '📊 难度分布',
-    beginner: '🌱 初级',
-    intermediate: '🌿 中级',
-    master: '🌳 高级',
+    subjectGroupPerformance: '学科分组',
+    difficultyDistribution: '难度分布',
+    beginner: '初级',
+    intermediate: '中级',
+    master: '高级',
     beginnerDesc: '基础概念与定义',
     intermediateDesc: '实际应用与流程',
     masterDesc: '专家分析与案例研究',
@@ -740,18 +740,18 @@ export const TRANSLATIONS = {
     // Import
     importTitle: '📥 添加新书本',
     importDesc: '上传 JSON 或 ZIP 文件，添加有趣的题目！',
-    dropFileHere: '📤 将文件拖放到这里！',
+    dropFileHere: '将文件拖放到这里！',
     supportsJsonZip: '支持 .json 或 .zip 文件',
-    chooseFile: '📂 选择文件',
-    aiHelper: '🤖 AI 小助手',
+    chooseFile: '选择文件',
+    aiHelper: 'AI 小助手',
     aiHelperDesc: '让 AI 帮你出题！',
-    easy: '🌱 简单',
-    medium: '🌿 中等',
-    hard: '🌳 困难',
-    copyPrompt: '📋 复制提示词',
+    easy: '简单',
+    medium: '中等',
+    hard: '困难',
+    copyPrompt: '复制提示词',
     copiedToClipboard: '✅ 已复制！',
     needTemplate: '📝 需要模板吗？',
-    downloadTemplate: '📄 下载模板',
+    downloadTemplate: '下载模板',
     importSuccess: '🎉 成功！添加了 {count} 道题目到 "{name}"！',
     goToLibrary: '📚 查看我的书本',
     
