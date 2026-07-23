@@ -1,3 +1,4 @@
+// PWAInstallPrompt.tsx - 修正版
 import React, { useState, useEffect } from 'react';
 import { Download, Share, X, Smartphone, CheckCircle } from 'lucide-react';
 import { LanguageCode } from '../types';
@@ -12,6 +13,14 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
   const [dismissed, setDismissed] = useState<boolean>(false);
   const [installedSuccess, setInstalledSuccess] = useState<boolean>(false);
+
+  // 檢查是否已經 dismiss (session storage)
+  useEffect(() => {
+    const hasDismissed = sessionStorage.getItem('pwa_prompt_dismissed') === 'true';
+    if (hasDismissed) {
+      setDismissed(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Check if app is already running as PWA / Standalone
@@ -38,6 +47,8 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
     const handleAppInstalled = () => {
       setInstalledSuccess(true);
       setDeferredPrompt(null);
+      // 安裝成功後，清除 dismiss 狀態
+      sessionStorage.removeItem('pwa_prompt_dismissed');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -50,20 +61,45 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setInstalledSuccess(true);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setInstalledSuccess(true);
+      }
+      setDeferredPrompt(null);
+    } catch (error) {
+      console.error('PWA installation error:', error);
     }
-    setDeferredPrompt(null);
   };
 
+  const handleDismiss = () => {
+    setDismissed(true);
+    // 儲存到 session storage，關閉瀏覽器後重設
+    sessionStorage.setItem('pwa_prompt_dismissed', 'true');
+  };
+
+  // 如果已經安裝或關閉，不顯示
   if (isStandalone || dismissed) {
     return null;
   }
 
-  // Show Android/Chrome Native Install Prompt if available
+  // ============================================================
+  // Android / Chrome 原生安裝提示
+  // ============================================================
   if (deferredPrompt) {
+    const installText = lang === 'zh' ? '安装离线 PWA 应用' 
+      : lang === 'ms' ? 'Pasang Aplikasi PWA Luar Talian' 
+      : 'Install Offline PWA App';
+    
+    const installDesc = lang === 'zh' ? '将本程序安装至手机桌面，支持离线全功能使用' 
+      : lang === 'ms' ? 'Tambahkan ke skrin utama untuk prestasi luar talian & akses pantas' 
+      : 'Add to home screen for native offline performance & quick access';
+    
+    const installBtn = lang === 'zh' ? '立即安装' 
+      : lang === 'ms' ? 'Pasang' 
+      : 'Install';
+
     return (
       <div className="mx-4 my-3 p-3.5 bg-[#5A6D5B] text-white rounded-2xl shadow-md border border-[#485749] flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3">
@@ -72,10 +108,10 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
           </div>
           <div>
             <h4 className="font-bold text-xs font-serif leading-tight">
-              {lang === 'zh' ? '安装离线 PWA 应用' : 'Install Offline PWA App'}
+              {installText}
             </h4>
             <p className="text-[11px] opacity-90 leading-tight mt-0.5">
-              {lang === 'zh' ? '将本程序安装至手机桌面，支持离线全功能使用' : 'Add to home screen for native offline performance & quick access'}
+              {installDesc}
             </p>
           </div>
         </div>
@@ -86,11 +122,12 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
             className="px-3.5 py-1.5 bg-white text-[#3E4A3E] hover:bg-[#F5F2EA] rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-[#5A6D5B]" />
-            <span>{lang === 'zh' ? '立即安装' : 'Install'}</span>
+            <span>{installBtn}</span>
           </button>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="p-1 hover:bg-white/20 rounded-lg transition-colors text-white/80 hover:text-white"
+            aria-label="Dismiss"
           >
             <X className="w-4 h-4" />
           </button>
@@ -99,8 +136,28 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
     );
   }
 
-  // Show iOS Share -> Add to Home Screen Instructions
+  // ============================================================
+  // iOS 分享 -> 添加到主屏幕 提示
+  // ============================================================
   if (isIOS) {
+    const iosTitle = lang === 'zh' ? '在 iOS 上安装此应用' 
+      : lang === 'ms' ? 'Pasang Aplikasi pada iOS' 
+      : 'Install on iOS Device';
+    
+    const iosDesc = lang === 'zh' ? (
+      <span>
+        点击 Safari 底部 <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">分享按钮</strong>，然后选择 <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"添加到主屏幕"</strong>
+      </span>
+    ) : lang === 'ms' ? (
+      <span>
+        Ketik butang <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">Kongsi</strong> di Safari dan pilih <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"Tambahkan ke Skrin Utama"</strong>
+      </span>
+    ) : (
+      <span>
+        Tap Safari <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">Share</strong> icon and select <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"Add to Home Screen"</strong>
+      </span>
+    );
+
     return (
       <div className="mx-4 my-3 p-3.5 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl shadow-sm flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -109,21 +166,18 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
           </div>
           <div>
             <h4 className="font-bold text-xs text-[#3E4A3E] dark:text-[#F5F2EA] font-serif leading-tight">
-              {lang === 'zh' ? '在 iOS 上安装此应用' : 'Install on iOS Device'}
+              {iosTitle}
             </h4>
             <p className="text-[11px] text-[#7C776B] dark:text-[#A09886] leading-tight mt-0.5">
-              {lang === 'zh' ? (
-                <span>点击 Safari 底部 <strong>分享按钮 <Share className="w-3 h-3 inline text-[#5A6D5B]" /></strong>，然后选择 <strong>“添加到主屏幕”</strong></span>
-              ) : (
-                <span>Tap Safari share icon <strong><Share className="w-3 h-3 inline text-[#5A6D5B]" /></strong> and select <strong>"Add to Home Screen"</strong></span>
-              )}
+              {iosDesc}
             </p>
           </div>
         </div>
 
         <button
-          onClick={() => setDismissed(true)}
-          className="p-1 text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA]"
+          onClick={handleDismiss}
+          className="p-1 text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA] shrink-0"
+          aria-label="Dismiss"
         >
           <X className="w-4 h-4" />
         </button>
@@ -131,14 +185,25 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
     );
   }
 
+  // ============================================================
+  // 安裝成功訊息
+  // ============================================================
   if (installedSuccess) {
+    const successText = lang === 'zh' ? '已成功安装 PWA 应用！' 
+      : lang === 'ms' ? 'Aplikasi PWA berjaya dipasang!' 
+      : 'PWA App installed successfully!';
+
     return (
       <div className="mx-4 my-3 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
         <div className="flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{lang === 'zh' ? '已成功安装 PWA 应用！' : 'PWA App installed successfully!'}</span>
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{successText}</span>
         </div>
-        <button onClick={() => setInstalledSuccess(false)} className="text-xs font-bold">
+        <button 
+          onClick={() => setInstalledSuccess(false)} 
+          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors"
+          aria-label="Close"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
