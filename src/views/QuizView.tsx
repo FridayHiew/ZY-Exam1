@@ -1,9 +1,9 @@
-// QuizView.tsx - Kid-Friendly Version
+// QuizView.tsx
 import React, { useState, useEffect } from 'react';
 import { AppStorageState, Question, QuizConfig, QuizResult, UserAnswerRecord } from '../types';
-import { saveAppState, resolveImagePath } from '../utils/storage';
+import { calculateAndUpdateStreak, saveAppState, resolveImagePath } from '../utils/storage';
 import { getTranslation } from '../utils/i18n';
-import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock, Award, RotateCcw, Check, AlertCircle, Grid, HelpCircle, Star, Sparkles, Rocket, Smile } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock, Award, RotateCcw, FileText, Check, AlertCircle, Image as ImageIcon, Grid, HelpCircle } from 'lucide-react';
 import { quizSounds } from '../utils/sound';
 
 interface QuizViewProps {
@@ -21,17 +21,22 @@ export const QuizView: React.FC<QuizViewProps> = ({
 }) => {
   const { collections, quizResults, settings } = appState;
   const lang = settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Map<number, number>>(new Map());
-  const [showExplanation, setShowExplanation] = useState<Map<number, boolean>>(new Map());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
+  const [showExplanation, setShowExplanation] = useState<Map<number, boolean>>(new Map());
   const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number | null>(null);
+  const [showGridModal, setShowGridModal] = useState(false);
   const [isExamCompleted, setIsExamCompleted] = useState(false);
   const [finalResult, setFinalResult] = useState<QuizResult | null>(null);
-  const [shuffledQuestionsMap, setShuffledQuestionsMap] = useState<Map<number, { options: [string, string, string, string]; correctIndex: number }>>(new Map());
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [shuffledQuestionsMap, setShuffledQuestionsMap] = useState<
+    Map<number, { options: [string, string, string, string]; correctIndex: number }>
+  >(new Map());
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let selectedQuestions: Question[] = [];
@@ -80,7 +85,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
     if (config.mode === 'EXAM' && config.timeLimitMinutes) {
       setTimeRemainingSeconds(config.timeLimitMinutes * 60);
     }
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -109,12 +114,12 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   const currentQ = questions[currentIndex];
   const shuffledData = shuffledQuestionsMap.get(currentIndex);
-  const totalQuestions = questions.length;
 
   const handleSelectOption = (optionIndex: number) => {
     if (isExamCompleted) return;
 
     const alreadyAnswered = userAnswers.has(currentIndex);
+
     setUserAnswers((prev) => {
       const next = new Map(prev);
       next.set(currentIndex, optionIndex);
@@ -142,6 +147,15 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
   };
 
+  const toggleFlag = (idx: number) => {
+    setFlaggedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
   const handleFinalSubmit = () => {
     if (isExamCompleted) return;
 
@@ -164,6 +178,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
     });
 
     const correctCount = records.filter((r) => r.isCorrect).length;
+    const totalQuestions = questions.length;
     const scorePercentage = Math.round((correctCount / Math.max(1, totalQuestions)) * 100);
     const passMark = config.passMarkPercentage || appState.settings.defaultPassMark || 70;
     const passed = scorePercentage >= passMark;
@@ -186,11 +201,6 @@ export const QuizView: React.FC<QuizViewProps> = ({
     setIsExamCompleted(true);
     onFinishQuiz(result);
 
-    if (passed && scorePercentage >= 80) {
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 5000);
-    }
-
     if (config.mode === 'EXAM') {
       if (passed) {
         quizSounds.playPassExam();
@@ -200,93 +210,95 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
   };
 
-  const getProgressEmoji = () => {
-    const answered = userAnswers.size;
-    const total = questions.length;
-    if (answered === total) return '🎉';
-    if (answered >= total * 0.7) return '🌟';
-    if (answered >= total * 0.4) return '💪';
-    return '🚀';
-  };
-
   if (questions.length === 0) {
     return (
-      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-gray-200 dark:border-gray-700">
-        <div className="text-6xl mb-4">🤔</div>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
-          No questions found! Try adding a book first.
+      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <p className="text-xs text-slate-500 mb-4">
+          {lang === 'zh'
+            ? '此会话没有可用题目。请导入或选择包含题目的知识库。'
+            : lang === 'ms'
+            ? 'Tiada soalan tersedia untuk sesi ini. Sila import atau pilih koleksi pengetahuan dengan soalan.'
+            : 'No questions available for this session. Please import or select a knowledge collection with questions.'}
         </p>
         <button
           onClick={onExitQuiz}
-          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
+          className="px-4 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl"
         >
-          🏠 Go Home
+          {lang === 'zh' ? '返回首页' : lang === 'ms' ? 'Kembali ke Utama' : 'Return to Home'}
         </button>
       </div>
     );
   }
 
-  // Results View - Kid Friendly
+  // Render Final Exam Results Summary View
   if (isExamCompleted && finalResult) {
-    const isAwesome = finalResult.scorePercentage >= 80;
-    const isGood = finalResult.scorePercentage >= 60;
-    const emoji = isAwesome ? '🌟' : isGood ? '💪' : '📚';
-    const message = isAwesome 
-      ? 'AMAZING! You\'re a superstar! 🌟' 
-      : isGood 
-      ? 'Good job! Keep practicing! 💪' 
-      : 'Don\'t give up! Practice makes perfect! 📚';
-
     return (
       <div className="space-y-6 pb-12 max-w-3xl mx-auto">
-        {showCelebration && (
-          <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-8xl animate-bounce">🎉</div>
-              <div className="text-4xl font-bold text-yellow-500 mt-4 animate-pulse">
-                ⭐ AMAZING! ⭐
-              </div>
-            </div>
+        <div className="p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl text-center">
+          <div
+            className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
+              finalResult.passed
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            <Award className="w-8 h-8" />
           </div>
-        )}
 
-        <div className="p-8 bg-white dark:bg-[#242824] rounded-3xl border-2 border-gray-200 dark:border-gray-700 shadow-xl text-center">
-          <div className="text-7xl mb-4">{emoji}</div>
-          
-          <h2 className="text-3xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] mb-2">
+          <span
+            className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 ${
+              finalResult.passed
+                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+            }`}
+          >
+            {finalResult.passed ? t('passed') : t('failed')}
+          </span>
+
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-1">
             {finalResult.scorePercentage}%
           </h2>
-          
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-4">
-            {message}
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+            {lang === 'zh'
+              ? `及格分数要求: ${config.passMarkPercentage || 70}%`
+              : lang === 'ms'
+              ? `Keperluan markah lulus: ${config.passMarkPercentage || 70}%`
+              : `Pass mark requirement: ${config.passMarkPercentage || 70}%`}
           </p>
 
-          <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl mb-6">
+          <div className="grid grid-cols-3 gap-3 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl mb-6 text-xs">
             <div>
-              <div className="text-2xl mb-1">❓</div>
-              <div className="font-bold text-sm">{finalResult.totalQuestions}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Questions</div>
+              <span className="text-slate-400 block text-[10px]">
+                {lang === 'zh' ? '题目总数' : lang === 'ms' ? 'Jumlah Soalan' : 'Total Questions'}
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                {finalResult.totalQuestions}
+              </span>
             </div>
             <div>
-              <div className="text-2xl mb-1">✅</div>
-              <div className="font-bold text-sm text-green-600 dark:text-green-400">{finalResult.correctCount}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Correct</div>
+              <span className="text-emerald-600 dark:text-emerald-400 block text-[10px]">
+                {lang === 'zh' ? '正确题数' : lang === 'ms' ? 'Jawapan Betul' : 'Correct Answers'}
+              </span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-300 text-sm">
+                {finalResult.correctCount}
+              </span>
             </div>
             <div>
-              <div className="text-2xl mb-1">⏱️</div>
-              <div className="font-bold text-sm">
-                {Math.floor(finalResult.timeSpentSeconds / 60)}m {finalResult.timeSpentSeconds % 60}s
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Time</div>
+              <span className="text-slate-400 block text-[10px]">
+                {lang === 'zh' ? '所用时间' : lang === 'ms' ? 'Masa Diambil' : 'Time Spent'}
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                {Math.floor(finalResult.timeSpentSeconds / 60)}{lang === 'zh' ? '分' : 'm'} {finalResult.timeSpentSeconds % 60}{lang === 'zh' ? '秒' : 's'}
+              </span>
             </div>
           </div>
 
-          <div className="flex justify-center gap-3 flex-wrap">
+          <div className="flex justify-center gap-3">
             <button
               onClick={onExitQuiz}
-              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs"
             >
-              🏠 Home
+              {lang === 'zh' ? '返回首页' : lang === 'ms' ? 'Kembali ke Utama' : 'Back to Home'}
             </button>
             <button
               onClick={() => {
@@ -295,134 +307,194 @@ export const QuizView: React.FC<QuizViewProps> = ({
                 setCurrentIndex(0);
                 setUserAnswers(new Map());
                 setShowExplanation(new Map());
+                setFlaggedQuestions(new Set());
                 setTimeSpentSeconds(0);
-                setShowCelebration(false);
+                setShowGridModal(false);
+                setRetryCount((prev) => prev + 1);
               }}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs shadow-md shadow-indigo-500/20"
             >
-              🔄 Try Again
+              {t('retryQuiz')}
             </button>
           </div>
         </div>
 
-        {/* Answer Review - Kid Friendly */}
-        <div className="p-6 bg-white dark:bg-[#242824] rounded-2xl border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] mb-4 flex items-center gap-2">
-            <span>📝</span> Review Your Answers
+        {/* Detailed Answer Breakdown */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-3">
+            {lang === 'zh'
+              ? (config.mode === 'EXAM' ? '试卷答案回顾' : '练习答案回顾与解析')
+              : lang === 'ms'
+              ? (config.mode === 'EXAM' ? 'Semakan Jawapan Peperiksaan' : 'Semakan Jawapan & Penerangan')
+              : (config.mode === 'EXAM' ? 'Answer Review' : 'Answer Review & Explanations')}
           </h3>
 
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {finalResult.answerRecords.map((ans, idx) => (
+          {finalResult.answerRecords.map((ans, idx) => {
+            const matchedQ = questions.find((q) => q.id === ans.questionId);
+            return (
               <div
                 key={idx}
-                className={`p-4 rounded-xl border-2 ${
+                className={`p-4 rounded-xl border text-xs space-y-2 ${
                   ans.isCorrect
-                    ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20'
-                    : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20'
+                    ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{ans.isCorrect ? '✅' : '❌'}</span>
-                    <span className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA]">
-                      Q{idx + 1}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {ans.category}
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    Q{idx + 1}. {ans.questionText}
                   </span>
-                </div>
-                <p className="text-sm text-[#2D2A26] dark:text-[#EAE7DF] mt-1">
-                  {ans.questionText}
-                </p>
-                <div className="mt-2 text-xs">
-                  <span className="text-green-600 dark:text-green-400">✓ {ans.shuffledOptions?.[ans.correctOptionIndex]}</span>
-                  {!ans.isCorrect && (
-                    <span className="text-red-600 dark:text-red-400 ml-2">
-                      ✗ You picked: {ans.shuffledOptions?.[ans.selectedOptionIndex]}
-                    </span>
+                  {ans.isCorrect ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
                   )}
                 </div>
+
+                {matchedQ?.image && (
+                  <div className="my-2 max-h-48 rounded-xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-1.5 w-fit max-w-full">
+                    <img
+                      src={resolveImagePath(matchedQ.image)}
+                      alt="Question diagram"
+                      className="max-h-44 object-contain rounded-lg"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                {ans.shuffledOptions?.map((opt, oIdx) => {
+                  const isSelected = ans.selectedOptionIndex === oIdx;
+                  const isCorrectOpt = ans.correctOptionIndex === oIdx;
+
+                  return (
+                    <div
+                      key={oIdx}
+                      className={`p-2 rounded-lg border text-[11px] ${
+                        isCorrectOpt
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border-emerald-300 font-bold'
+                          : isSelected
+                          ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-200 border-rose-300 font-bold'
+                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <span>{String.fromCharCode(65 + oIdx)}. {opt}</span>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          )})}
         </div>
       </div>
     );
   }
 
-  // Active Quiz View - Kid Friendly
-  const progress = ((userAnswers.size) / totalQuestions) * 100;
+  // Active Quiz View
+  const modeLabel = lang === 'zh'
+    ? (config.mode === 'PRACTICE' ? t('practiceMode') : config.mode === 'EXAM' ? t('examMode') : config.mode === 'MISTAKE_REVIEW' ? t('mistakeReviewMode') : t('weakTopicTraining'))
+    : lang === 'ms'
+    ? (config.mode === 'PRACTICE' ? 'MOD LATIHAN' : config.mode === 'EXAM' ? 'MOD PEPERIKSAAN' : config.mode === 'MISTAKE_REVIEW' ? 'MOD SEMAKAN KESILAPAN' : 'LATIHAN TOPIK LEMAH')
+    : `${config.mode} MODE`;
 
   return (
     <div className="space-y-6 pb-12 max-w-3xl mx-auto">
-      {/* Top Bar */}
-      <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border-2 border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{getProgressEmoji()}</span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-                  Question {currentIndex + 1} of {totalQuestions}
-                </span>
-                <span className="text-sm">📝</span>
-              </div>
-              <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
+      {/* Top Session Progress Bar & Controls */}
+      <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#5A6D5B] dark:text-[#A3B5A4] block font-serif">
+            {modeLabel}
+          </span>
+          <div className="text-xs font-extrabold text-[#2D2A26] dark:text-[#EAE7DF]">
+            {lang === 'zh'
+              ? `第 ${currentIndex + 1} 题，共 ${questions.length} 题`
+              : lang === 'ms'
+              ? `Soalan ${currentIndex + 1} daripada ${questions.length}`
+              : `Question ${currentIndex + 1} of ${questions.length}`}
           </div>
+        </div>
 
-          {timeRemainingSeconds !== null && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
-              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-              <span className="font-bold text-yellow-700 dark:text-yellow-300 font-mono text-lg">
-                {Math.floor(timeRemainingSeconds / 60)
-                  .toString()
-                  .padStart(2, '0')}
-                :{(timeRemainingSeconds % 60).toString().padStart(2, '0')}
-              </span>
-            </div>
+        {timeRemainingSeconds !== null && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] text-[#3E4A3E] dark:text-[#F5F2EA] font-mono text-xs font-bold border border-[#E8E2D2] dark:border-[#353B35]">
+            <Clock className="w-4 h-4 text-[#5A6D5B]" />
+            <span>
+              {Math.floor(timeRemainingSeconds / 60)
+                .toString()
+                .padStart(2, '0')}
+              :{(timeRemainingSeconds % 60).toString().padStart(2, '0')}
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {config.mode === 'EXAM' && (
+            <button
+              onClick={() => setShowGridModal(true)}
+              className="p-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] text-xs font-semibold hover:bg-[#EAE5D8] transition-colors border border-[#E8E2D2] dark:border-[#353B35]"
+              title={lang === 'zh' ? '题目导航网格' : lang === 'ms' ? 'Grid Penunjuk Soalan' : 'Question Navigator Grid'}
+            >
+              <Grid className="w-4 h-4" />
+            </button>
           )}
 
           <button
             onClick={onExitQuiz}
-            className="text-2xl hover:bg-gray-100 dark:hover:bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center"
+            className="text-xs font-semibold px-3 py-1.5 bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] rounded-xl hover:bg-[#EAE5D8] transition-colors border border-[#E8E2D2] dark:border-[#353B35]"
           >
-            ✕
+            {lang === 'zh' ? '退出' : lang === 'ms' ? 'Keluar' : 'Exit'}
           </button>
         </div>
       </div>
 
-      {/* Question Card */}
-      <div className="p-6 bg-white dark:bg-[#242824] rounded-3xl border-2 border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">🤔</span>
-          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {currentQ.category || 'Fun Facts'}
+      {/* Progress Line */}
+      <div className="w-full bg-[#EAE5D8] dark:bg-[#383E38] h-1.5 rounded-full overflow-hidden">
+        <div
+          className="bg-[#5A6D5B] h-full transition-all duration-300"
+          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Main Question Display Card */}
+      <div className="p-6 bg-white dark:bg-[#242824] rounded-3xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-6">
+        <div className="flex items-center justify-between text-xs text-[#7C776B] dark:text-[#A09886]">
+          <span className="font-semibold text-[#6B6559] dark:text-[#A09886]">
+            {lang === 'zh' ? '知识点: ' : lang === 'ms' ? 'Topik: ' : 'Topic: '}{currentQ.category || (lang === 'zh' ? '常规' : 'General')}
           </span>
+          {config.mode === 'EXAM' && (
+            <button
+              onClick={() => toggleFlag(currentIndex)}
+              className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                flaggedQuestions.has(currentIndex)
+                  ? 'bg-[#D9C5B2] text-[#2D2A26] border-[#B8C0B0]'
+                  : 'bg-[#F5F2EA] text-[#6B6559] border-[#E8E2D2] dark:bg-[#2D322D] dark:text-[#A09886] dark:border-[#353B35]'
+              }`}
+            >
+              {lang === 'zh'
+                ? (flaggedQuestions.has(currentIndex) ? '★ 已标记' : '☆ 标记待复查')
+                : lang === 'ms'
+                ? (flaggedQuestions.has(currentIndex) ? '★ Ditandakan' : '☆ Tanda untuk Semakan')
+                : (flaggedQuestions.has(currentIndex) ? '★ Flagged' : '☆ Flag for Review')}
+            </button>
+          )}
         </div>
 
-        <h3 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] leading-relaxed mb-4">
+        {/* Question Text */}
+        <h3 className="text-base font-bold text-[#3E4A3E] dark:text-[#F5F2EA] leading-relaxed font-serif">
           {currentQ.questionText}
         </h3>
 
         {currentQ.image && (
-          <div className="my-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 flex items-center justify-center p-2">
+          <div className="my-3 max-h-64 rounded-2xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-2">
             <img
               src={resolveImagePath(currentQ.image)}
-              alt="Question illustration"
-              className="max-h-48 object-contain rounded-xl"
+              alt="Question supporting diagram"
+              className="max-h-60 object-contain rounded-xl"
             />
           </div>
         )}
 
-        {/* Options */}
-        <div className="space-y-3">
+        {/* 4 Selectable Answer Options A-D */}
+        <div className="space-y-2.5 pt-2">
           {shuffledData?.options.map((optText, oIdx) => {
             const isSelected = userAnswers.get(currentIndex) === oIdx;
             const isCorrectOption = oIdx === shuffledData.correctIndex;
@@ -430,127 +502,140 @@ export const QuizView: React.FC<QuizViewProps> = ({
               (config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
               showExplanation.get(currentIndex);
 
-            let buttonStyle = 'border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20';
+            let optionStyle =
+              'bg-[#F5F2EA] dark:bg-[#2D322D] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] hover:bg-[#EAE5D8]';
 
             if (isSelected) {
-              buttonStyle = 'border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20';
+              optionStyle =
+                'bg-[#EAE5D8] dark:bg-[#383E38] border-[#5A6D5B] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold shadow-sm';
             }
 
             if (isRevealed) {
               if (isCorrectOption) {
-                buttonStyle = 'border-2 border-green-500 bg-green-50 dark:bg-green-950/20';
+                optionStyle =
+                  'bg-[#5A6D5B]/20 border-[#5A6D5B] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold';
               } else if (isSelected && !isCorrectOption) {
-                buttonStyle = 'border-2 border-red-500 bg-red-50 dark:bg-red-950/20';
+                optionStyle =
+                  'bg-rose-100/80 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold';
               }
             }
-
-            const optionLetter = String.fromCharCode(65 + oIdx);
 
             return (
               <button
                 key={oIdx}
                 onClick={() => handleSelectOption(oIdx)}
-                className={`w-full p-4 rounded-2xl text-left text-sm font-medium transition-all flex items-center gap-3 ${buttonStyle}`}
-                disabled={isRevealed}
+                className={`w-full p-3.5 rounded-2xl border text-left text-xs transition-all flex items-start gap-3 ${optionStyle}`}
               >
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  isRevealed && isCorrectOption
-                    ? 'bg-green-500 text-white'
-                    : isRevealed && isSelected && !isCorrectOption
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {isRevealed && isCorrectOption ? '✓' : isRevealed && isSelected && !isCorrectOption ? '✗' : optionLetter}
+                <span className="w-6 h-6 rounded-lg bg-white/80 dark:bg-[#1C1E1C]/80 font-bold flex items-center justify-center text-xs shrink-0 border border-current opacity-80">
+                  {String.fromCharCode(65 + oIdx)}
                 </span>
-                <span>{optText}</span>
-                {isRevealed && isCorrectOption && <span className="ml-auto text-green-600 dark:text-green-400">✅ Correct!</span>}
-                {isRevealed && isSelected && !isCorrectOption && <span className="ml-auto text-red-600 dark:text-red-400">❌ Oops!</span>}
+                <span className="mt-0.5 font-medium leading-normal">{optText}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Explanation */}
+        {/* Explanation Reveal in Practice Mode */}
         {(config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
           showExplanation.get(currentIndex) && (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">💡</span>
-                <span className="font-bold text-blue-700 dark:text-blue-300">Explanation</span>
-              </div>
-              <p className="text-sm text-[#2D2A26] dark:text-[#EAE7DF]">
-                {currentQ.explanation || 'Great job! Keep learning! 📚'}
+            <div className="p-4 rounded-2xl bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] text-xs space-y-1">
+              <span className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA] block flex items-center gap-1.5 font-serif">
+                <HelpCircle className="w-4 h-4 text-[#5A6D5B]" />
+                {t('questionExplanation')}:
+              </span>
+              <p className="text-[#2D2A26] dark:text-[#EAE7DF] leading-relaxed">
+                {currentQ.explanation || (lang === 'zh' ? '该题未提供具体解析。' : lang === 'ms' ? 'Tiada penerangan diberikan untuk soalan ini.' : 'No explicit explanation provided for this question.')}
               </p>
               {currentQ.sourceReference && (
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  📖 {currentQ.sourceReference}
+                <div className="mt-2 pt-2 border-t border-[#EAE5D8] dark:border-[#353B35] text-[11px] text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center gap-1">
+                  <span className="font-bold">
+                    {lang === 'zh' ? '参考来源: ' : lang === 'ms' ? 'Rujukan Sumber: ' : 'Source Reference: '}
+                  </span>
+                  <span>{currentQ.sourceReference}</span>
                 </div>
               )}
             </div>
           )}
-      </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <button
-          disabled={currentIndex === 0}
-          onClick={() => setCurrentIndex((prev) => prev - 1)}
-          className="flex items-center gap-2 px-5 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl text-sm disabled:opacity-40 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
-            {userAnswers.size}/{totalQuestions}
-          </span>
-          <span className="text-sm">✅</span>
-        </div>
-
-        {currentIndex < totalQuestions - 1 ? (
+        {/* Navigation Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-[#E8E2D2] dark:border-[#353B35]">
           <button
-            onClick={() => setCurrentIndex((prev) => prev + 1)}
-            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
+            disabled={currentIndex === 0}
+            onClick={() => setCurrentIndex((prev) => prev - 1)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] font-semibold text-xs disabled:opacity-40 border border-[#E8E2D2] dark:border-[#353B35]"
           >
-            <span>Next</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" />
+            <span>{t('previousQuestion')}</span>
           </button>
-        ) : (
-          <button
-            onClick={handleFinalSubmit}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
-          >
-            <span>🎯 Finish!</span>
-            <Check className="w-4 h-4" />
-          </button>
-        )}
-      </div>
 
-      {/* Progress Indicators */}
-      <div className="flex flex-wrap gap-1.5 justify-center">
-        {questions.map((_, idx) => {
-          const isAnswered = userAnswers.has(idx);
-          const isCurrent = idx === currentIndex;
-          return (
+          {currentIndex < questions.length - 1 ? (
             <button
-              key={idx}
-              onClick={() => setCurrentIndex(idx)}
-              className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${
-                isCurrent
-                  ? 'ring-2 ring-blue-500 scale-110'
-                  : ''
-              } ${
-                isAnswered
-                  ? 'bg-green-400 dark:bg-green-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-              }`}
+              onClick={() => setCurrentIndex((prev) => prev + 1)}
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-all shadow-sm"
             >
-              {idx + 1}
+              <span>{t('nextQuestion')}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
-          );
-        })}
+          ) : (
+            <button
+              onClick={handleFinalSubmit}
+              className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#3E4A3E] hover:bg-[#2E372E] text-white font-bold text-xs transition-all shadow-sm"
+            >
+              <span>{t('submitExam')}</span>
+              <Check className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Grid Navigator Modal for Exam Mode */}
+      {showGridModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 mb-4">
+              {lang === 'zh' ? '题目导航网格' : lang === 'ms' ? 'Grid Penunjuk Soalan' : 'Question Navigator Grid'}
+            </h3>
+
+            <div className="grid grid-cols-5 gap-2 max-h-60 overflow-y-auto mb-6">
+              {questions.map((_, idx) => {
+                const isAnswered = userAnswers.has(idx);
+                const isCurrent = idx === currentIndex;
+                const isFlagged = flaggedQuestions.has(idx);
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setCurrentIndex(idx);
+                      setShowGridModal(false);
+                    }}
+                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                      isCurrent
+                        ? 'ring-2 ring-indigo-500 border-indigo-500'
+                        : ''
+                    } ${
+                      isAnswered
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {idx + 1} {isFlagged ? '★' : ''}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowGridModal(false)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl"
+              >
+                {t('close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

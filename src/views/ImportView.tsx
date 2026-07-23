@@ -1,10 +1,10 @@
-// ImportView.tsx - Kid-Friendly Version
+// ImportView.tsx
 import React, { useState } from 'react';
 import { AppStorageState, KnowledgeCollection, ValidationReport } from '../types';
 import { parseJSONImport, parseZIPImport } from '../utils/importer';
 import { downloadSampleJSONTemplate } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
-import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, Rocket } from 'lucide-react';
+import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip } from 'lucide-react';
 
 interface ImportViewProps {
   appState: AppStorageState;
@@ -19,6 +19,7 @@ export const ImportView: React.FC<ImportViewProps> = ({
 }) => {
   const { collections, settings } = appState;
   const lang = settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const [report, setReport] = useState<ValidationReport | null>(null);
   const [conflictStrategy, setConflictStrategy] = useState<'SKIP' | 'OVERWRITE' | 'IMPORT_NEW'>('IMPORT_NEW');
@@ -28,8 +29,103 @@ export const ImportView: React.FC<ImportViewProps> = ({
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const getPromptText = (level: 'beginner' | 'intermediate' | 'master') => {
-    // ... same prompt logic but simplified for kids
-    return `Please create a fun learning quiz in JSON format for kids about this topic. Make it easy to understand with simple words!`;
+    if (level === 'beginner') {
+      return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on basic principles, definitions, and essential concepts.
+
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+{
+  "collectionName": "Foundational Learning Package",
+  "version": 1,
+  "description": "Beginner-level collection covering fundamental concepts and essential definitions.",
+  "group": "Specify Subject Group e.g. Cybersecurity, Medicine, IT, Business",
+  "difficulty": "Beginner",
+  "questions": [
+    {
+      "id": "q001",
+      "category": "Core Fundamentals",
+      "difficulty": "Beginner",
+      "knowledgeLevel": "Remember",
+      "questionType": "Conceptual",
+      "tags": ["basics", "fundamentals"],
+      "questionText": "Clear foundational question testing essential terminology or core rules...",
+      "statements": {},
+      "optionA": "First straightforward option",
+      "optionB": "Second option",
+      "optionC": "Third option",
+      "optionD": "Fourth option",
+      "correctAnswer": "A",
+      "explanation": "Provide detailed reasoning explaining why the correct answer is selected and why other options are incorrect. Reference: Chapter/Section/Page.",
+      "sourceReference": "Chapter 1, Page 5",
+      "imageFile": ""
+    }
+  ]
+}`;
+    } else if (level === 'intermediate') {
+      return `Please generate a practical, intermediate-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on procedural application, real-world scenario analysis, and problem-solving.
+
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+{
+  "collectionName": "Practical Application Package",
+  "version": 1,
+  "description": "Intermediate-level collection focusing on practical scenarios and procedural workflows.",
+  "group": "Specify Subject Group e.g. Cybersecurity, Medicine, IT, Business",
+  "difficulty": "Intermediate",
+  "questions": [
+    {
+      "id": "q001",
+      "category": "Practical Scenarios",
+      "difficulty": "Intermediate",
+      "knowledgeLevel": "Apply",
+      "questionType": "Scenario",
+      "tags": ["practice", "workflow"],
+      "questionText": "Practical scenario question testing application of concepts to real-world situations...",
+      "statements": {},
+      "optionA": "First plausible scenario option",
+      "optionB": "Second option",
+      "optionC": "Third option",
+      "optionD": "Fourth option",
+      "correctAnswer": "B",
+      "explanation": "Provide detailed reasoning explaining the optimal approach for this scenario. Reference: Chapter/Section/Page.",
+      "sourceReference": "Chapter 3, Page 24",
+      "imageFile": ""
+    }
+  ]
+}`;
+    } else {
+      return `Please generate an expert, master-level professional assessment collection in valid JSON format based on the attached document(s) / text provided. Focus on deep troubleshooting, complex case studies, critical evaluation, and expert analysis.
+
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+{
+  "collectionName": "Generated Learning Package",
+  "version": 1,
+  "description": "Master-level professional assessment generated from uploaded document.",
+  "group": "Specify Subject Group e.g. Cybersecurity, Medicine, IT, Business",
+  "difficulty": "Master",
+  "questions": [
+    {
+      "id": "q001",
+      "category": "Expert Troubleshooting",
+      "difficulty": "Master",
+      "knowledgeLevel": "Analyze",
+      "questionType": "Analysis",
+      "tags": ["expert", "troubleshooting"],
+      "questionText": "Complex case study / analysis question testing deep technical expertise and evaluation...",
+      "statements": {},
+      "optionA": "First comprehensive option",
+      "optionB": "Second option",
+      "optionC": "Third option",
+      "optionD": "Fourth option",
+      "correctAnswer": "A",
+      "explanation": "Provide detailed reasoning explaining why the correct answer is selected and why other options are incorrect. Reference: Chapter/Section/Page.",
+      "sourceReference": "Chapter 5, Section 2",
+      "imageFile": ""
+    }
+  ]
+}`;
+    }
   };
 
   const aiPromptText = getPromptText(selectedDifficultyLevel);
@@ -59,14 +155,14 @@ export const ImportView: React.FC<ImportViewProps> = ({
         const buffer = await file.arrayBuffer();
         res = await parseZIPImport(buffer);
       } else {
-        alert('Please upload a .json or .zip file!');
+        alert(t('invalidBackup'));
         setIsProcessing(false);
         return;
       }
 
       setReport(res);
     } catch (err: any) {
-      alert(`Oops! Something went wrong: ${err.message}`);
+      alert(t('backupError').replace('{error}', err.message));
     } finally {
       setIsProcessing(false);
     }
@@ -75,13 +171,13 @@ export const ImportView: React.FC<ImportViewProps> = ({
   const handleConfirmImport = () => {
     if (!report || !report.isValid || report.extractedQuestions.length === 0) return;
 
-    const colName = report.collectionName || 'My New Book';
+    const colName = report.collectionName || (lang === 'zh' ? '导入题库' : 'Imported Collection');
     const existingIndex = collections.findIndex((c) => c.name.toLowerCase() === colName.toLowerCase());
 
     let updatedCollections = [...collections];
 
     if (existingIndex >= 0 && conflictStrategy === 'SKIP') {
-      alert(`"${colName}" already exists! Skipping import.`);
+      alert(lang === 'zh' ? `题库集合“${colName}”已存在，根据冲突策略已跳过导入。` : `Collection "${colName}" already exists. Import skipped based on strategy.`);
       return;
     } else if (existingIndex >= 0 && conflictStrategy === 'OVERWRITE') {
       updatedCollections[existingIndex] = {
@@ -99,9 +195,9 @@ export const ImportView: React.FC<ImportViewProps> = ({
       const newCollection: KnowledgeCollection = {
         id: `col_${Date.now()}`,
         name: finalName,
-        description: report.collectionDescription || `📚 ${report.extractedQuestions.length} fun questions!`,
+        description: report.collectionDescription || (lang === 'zh' ? `包含 ${report.extractedQuestions.length} 道题目的导入题库。` : `Imported with ${report.extractedQuestions.length} questions.`),
         group: report.collectionGroup || 'General',
-        difficulty: report.collectionDifficulty || 'Beginner',
+        difficulty: report.collectionDifficulty || 'Master',
         version: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -113,38 +209,40 @@ export const ImportView: React.FC<ImportViewProps> = ({
     }
 
     onUpdateCollections(updatedCollections);
-    setImportSuccessMsg(`🎉 Success! Added ${report.extractedQuestions.length} questions to "${colName}"!`);
+    setImportSuccessMsg(
+      t('importSuccess')
+        .replace('{count}', report.extractedQuestions.length)
+        .replace('{name}', colName)
+    );
     setReport(null);
   };
 
   return (
     <div className="space-y-6 pb-12 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">📥</span>
-        <div>
-          <h2 className="text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-            Add New Book
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Upload a JSON or ZIP file to add fun questions!
-          </p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+          {t('importTitle')}
+        </h2>
+        <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+          {t('importDesc')}
+        </p>
       </div>
 
-      {/* Upload Area */}
-      <div className="p-8 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-3 border-dashed border-blue-300 dark:border-blue-700 rounded-3xl text-center hover:border-blue-500 transition-colors">
-        <div className="text-6xl mb-4">📤</div>
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] mb-2">
-          Drop your file here!
+      {/* File Upload Dropzone */}
+      <div className="p-8 bg-white dark:bg-[#242824] border-2 border-dashed border-[#E8E2D2] dark:border-[#353B35] rounded-3xl text-center hover:border-[#5A6D5B] transition-colors">
+        <div className="w-14 h-14 rounded-2xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center mx-auto mb-3">
+          <UploadCloud className="w-7 h-7" />
+        </div>
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] mb-1 font-serif">
+          {t('dropFileHere')}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Supports <span className="font-bold text-blue-600 dark:text-blue-400">.json</span> or{' '}
-          <span className="font-bold text-blue-600 dark:text-blue-400">.zip</span> files
+        <p className="text-xs text-[#7C776B] dark:text-[#A09886] max-w-sm mx-auto mb-4">
+          {t('supportsJsonZip')}
         </p>
 
-        <label className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform cursor-pointer">
-          <UploadCloud className="w-5 h-5" />
-          <span>📂 Choose File</span>
+        <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs cursor-pointer transition-all shadow-sm">
+          <UploadCloud className="w-4 h-4" />
+          <span>{t('chooseFile')}</span>
           <input
             type="file"
             accept=".json,.zip"
@@ -154,192 +252,226 @@ export const ImportView: React.FC<ImportViewProps> = ({
         </label>
       </div>
 
-      {/* Import Preview */}
+      {/* Pre-Import Validation & Preview Report */}
       {report && (
-        <div className="p-6 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+        <div className="p-6 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl space-y-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#E8E2D2] dark:border-[#353B35] pb-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl">📖</span>
-                <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-                  {report.collectionName || 'New Book'}
-                </h3>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {report.extractedQuestions.length} questions found
+              <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                {lang === 'zh' ? '导入前数据校验报告' : 'Pre-Import Validation Report'}
+              </h3>
+              <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+                {lang === 'zh' ? '题库集合：' : 'Collection:'} <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF]">{report.collectionName}</span>
               </p>
             </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-              report.isValid
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-            }`}>
-              {report.isValid ? '✅ Valid' : '❌ Issues'}
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                report.isValid
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200'
+              }`}
+            >
+              {report.isValid
+                ? (lang === 'zh' ? '校验通过' : 'Validation Passed')
+                : (lang === 'zh' ? '校验失败' : 'Validation Failed')}
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl text-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{report.totalRows}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
+          <div className="grid grid-cols-3 gap-3 text-center text-xs">
+            <div className="p-3 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D]">
+              <span className="text-[#7C776B] dark:text-[#A09886] block text-[10px]">
+                {lang === 'zh' ? '解析总数' : 'Total Parsed'}
+              </span>
+              <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF] text-sm">{report.totalRows}</span>
             </div>
-            <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-xl text-center">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{report.validRows}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">✅ Good</div>
+            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
+              <span className="text-emerald-600 dark:text-emerald-400 block text-[10px]">
+                {lang === 'zh' ? '有效题目' : 'Valid Questions'}
+              </span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-300 text-sm">{report.validRows}</span>
             </div>
-            <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl text-center">
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{report.invalidRows}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">⚠️ Issues</div>
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40">
+              <span className="text-rose-600 dark:text-rose-400 block text-[10px]">
+                {lang === 'zh' ? '跳过 / 无效' : 'Skipped / Invalid'}
+              </span>
+              <span className="font-bold text-rose-700 dark:text-rose-300 text-sm">{report.invalidRows}</span>
             </div>
           </div>
 
           {report.errors.length > 0 && (
-            <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 mb-4">
-              <span className="font-bold">⚠️ Fix these issues:</span>
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 text-rose-700 dark:text-rose-300 text-xs space-y-1">
+              <span className="font-bold block">{lang === 'zh' ? '校验错误说明：' : 'Validation Errors:'}</span>
               {report.errors.map((err, idx) => (
-                <p key={idx} className="text-xs mt-1">
-                  • Row {err.row}: {err.message}
+                <p key={idx} className="text-[11px]">
+                  • {lang === 'zh' ? `第 ${err.row} 行 [${err.field}]: ${err.message}` : `Row ${err.row} [${err.field}]: ${err.message}`}
                 </p>
               ))}
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500 dark:text-gray-400">If book exists:</span>
-              <div className="flex gap-1">
-                {[
-                  { id: 'IMPORT_NEW', label: '➕ New' },
-                  { id: 'OVERWRITE', label: '🔄 Overwrite' },
-                  { id: 'SKIP', label: '⏭️ Skip' },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setConflictStrategy(opt.id as any)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      conflictStrategy === opt.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+          <div className="p-4 bg-[#F5F2EA] dark:bg-[#2D322D] rounded-xl border border-[#E8E2D2] dark:border-[#353B35]">
+            <label className="text-xs font-bold text-[#2D2A26] dark:text-[#EAE7DF] block mb-2">
+              {lang === 'zh' ? '若集合或题目 ID 已存在：' : 'If Collection or Question ID Exists:'}
+            </label>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {[
+                { id: 'IMPORT_NEW', label: lang === 'zh' ? '导入为新题库' : 'Import as New' },
+                { id: 'OVERWRITE', label: lang === 'zh' ? '覆盖现有题库' : 'Overwrite Existing' },
+                { id: 'SKIP', label: lang === 'zh' ? '跳过重复项' : 'Skip Duplicates' },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setConflictStrategy(opt.id as any)}
+                  className={`py-2 px-3 rounded-lg font-semibold border transition-all ${
+                    conflictStrategy === opt.id
+                      ? 'bg-[#5A6D5B] text-white border-[#5A6D5B] shadow-sm'
+                      : 'bg-white dark:bg-[#242824] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setReport(null)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={!report.isValid || report.extractedQuestions.length === 0}
-                onClick={handleConfirmImport}
-                className="px-5 py-2 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold rounded-xl text-sm shadow-md hover:scale-105 transition-transform disabled:opacity-50"
-              >
-                📥 Import Book!
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              onClick={() => setReport(null)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-[#7C776B] hover:bg-[#F5F2EA] dark:hover:bg-[#2D322D]"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              disabled={!report.isValid || report.extractedQuestions.length === 0}
+              onClick={handleConfirmImport}
+              className="px-5 py-2.5 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-all shadow-sm disabled:opacity-50"
+            >
+              {lang === 'zh' ? '确认并保存至本地数据库' : 'Confirm & Save to Local Database'}
+            </button>
           </div>
         </div>
       )}
 
-      {/* AI Helper */}
-      <div className="p-6 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl">🤖</span>
-          <div>
-            <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              AI Helper
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Ask AI to create questions for you!
-            </p>
+      {/* AI Prompt Template Section */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                {t('aiHelper')}
+              </h3>
+              <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+                {t('aiHelperDesc')}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={handleCopyPrompt}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shrink-0 ${
+              copiedPrompt
+                ? 'bg-emerald-600 text-white'
+                : 'bg-[#5A6D5B] hover:bg-[#485749] text-white shadow-sm'
+            }`}
+          >
+            {copiedPrompt ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>{t('copiedToClipboard')}</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                <span>{t('copyPrompt')}</span>
+              </>
+            )}
+          </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {(['beginner', 'intermediate', 'master'] as const).map((lvl) => (
-            <button
-              key={lvl}
-              onClick={() => setSelectedDifficultyLevel(lvl)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                selectedDifficultyLevel === lvl
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              {lvl === 'beginner' ? '🌱 Easy' : lvl === 'intermediate' ? '🌿 Medium' : '🌳 Hard'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          <span className="text-xs font-semibold text-[#7C776B] dark:text-[#A09886] mr-1">{lang === 'zh' ? '目标难度:' : 'Target Level:'}</span>
+          {(['beginner', 'intermediate', 'master'] as const).map((lvl) => {
+            const isActive = selectedDifficultyLevel === lvl;
+            const labels = {
+              beginner: t('easy'),
+              intermediate: t('medium'),
+              master: t('hard'),
+            };
+            return (
+              <button
+                key={lvl}
+                onClick={() => setSelectedDifficultyLevel(lvl)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-[#5A6D5B] text-white shadow-sm'
+                    : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
+                }`}
+              >
+                {labels[lvl]}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-sm font-mono text-gray-600 dark:text-gray-400 max-h-40 overflow-y-auto mb-4">
-          {aiPromptText}
+        <div className="relative">
+          <pre className="p-4 bg-[#F5F2EA] dark:bg-[#1D211D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[11px] font-mono text-[#2D2A26] dark:text-[#EAE7DF] overflow-x-auto max-h-48 whitespace-pre-wrap leading-relaxed">
+            {aiPromptText}
+          </pre>
         </div>
 
-        <button
-          onClick={handleCopyPrompt}
-          className={`w-full py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-            copiedPrompt
-              ? 'bg-green-500 text-white'
-              : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:scale-105'
-          }`}
-        >
-          {copiedPrompt ? (
-            <>
-              <Check className="w-5 h-5" /> ✅ Copied!
-            </>
-          ) : (
-            <>
-              <Copy className="w-5 h-5" /> 📋 Copy Prompt
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2 text-xs text-[#5A6D5B] dark:text-[#A3B5A4] bg-[#5A6D5B]/10 p-2.5 rounded-xl font-medium">
+          <Paperclip className="w-4 h-4 shrink-0" />
+          <span>
+            <strong>{lang === 'zh' ? '使用说明：' : 'Instruction:'}</strong>{' '}
+            {lang === 'zh'
+              ? '复制上方提示词，附带您的学习资料或 PDF 文件发送给 ChatGPT、Gemini 或 Claude 即可生成标准 JSON 题库。'
+              : 'Copy the prompt above, attach your study files/PDFs, and paste into ChatGPT or Gemini to receive a ready-to-import JSON package.'}
+          </span>
+        </div>
       </div>
 
-      {/* Success Message */}
+      {/* Starter Template Downloader */}
+      <div className="p-5 bg-[#F5F2EA] dark:bg-[#2D322D] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h4 className="text-xs font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+            {t('needTemplate')}
+          </h4>
+          <p className="text-[11px] text-[#7C776B] dark:text-[#A09886]">
+            {lang === 'zh' ? '下载标准预置格式的 JSON 题目模版文件' : 'Download standard pre-formatted question template for JSON'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={downloadSampleJSONTemplate}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#242824] text-[#2D2A26] dark:text-[#EAE7DF] border border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] text-xs font-semibold shadow-sm transition-colors"
+          >
+            <FileCode className="w-3.5 h-3.5 text-[#5A6D5B]" />
+            <span>{t('downloadTemplate')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Import Success Message */}
       {importSuccessMsg && (
-        <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-2xl flex items-center justify-between gap-4">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🎉</span>
-            <p className="font-bold text-green-800 dark:text-green-200">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
               {importSuccessMsg}
             </p>
           </div>
           <button
             onClick={() => onNavigateTab('library')}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl text-sm transition-colors"
+            className="text-xs font-semibold px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
           >
-            📚 See My Books
+            {t('goToLibrary')}
           </button>
         </div>
       )}
-
-      {/* Template Download */}
-      <div className="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">📝</span>
-          <div>
-            <h4 className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              Need a template?
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Download a sample JSON file to get started!
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={downloadSampleJSONTemplate}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
-        >
-          <FileCode className="w-4 h-4" />
-          <span>📄 Download Template</span>
-        </button>
-      </div>
     </div>
   );
 };

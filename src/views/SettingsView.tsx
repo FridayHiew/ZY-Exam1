@@ -1,9 +1,9 @@
-// SettingsView.tsx - Kid-Friendly Version
+// SettingsView.tsx
 import React, { useState, useEffect } from 'react';
 import { AppSettings, AppStorageState, LanguageCode } from '../types';
 import { getTranslation } from '../utils/i18n';
 import { getStorageUsageInfo } from '../utils/indexedDB';
-import { Settings, Globe, Moon, Sun, Type, Lock, ShieldCheck, Trash2, Key, HardDrive, Database, FileCode, Smile, Sparkles } from 'lucide-react';
+import { Settings, Globe, Moon, Sun, Type, Lock, ShieldCheck, Trash2, Key, HardDrive, Database, FileCode } from 'lucide-react';
 
 interface SettingsViewProps {
   appState: AppStorageState;
@@ -20,6 +20,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const { settings, license } = appState;
   const lang = settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const [pinInput, setPinInput] = useState(settings.pinCode || '1234');
   const [storageInfo, setStorageInfo] = useState<{ usageMB: string; quotaMB: string; isIndexedDBSupported: boolean }>({
@@ -36,7 +37,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleToggleSecurity = () => {
     if (!settings.securityEnabled) {
-      const newPin = prompt('Set a 4-digit secret code:', '1234');
+      const newPin = prompt(lang === 'zh' ? '设置 4 位安全 PIN 码：' : 'Set 4-Digit Security PIN Code:', '1234');
       if (newPin && newPin.length === 4) {
         onUpdateSettings({ securityEnabled: true, pinCode: newPin });
       }
@@ -47,221 +48,258 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-12 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">⚙️</span>
-        <div>
-          <h2 className="text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-            Settings
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Customize your learning experience!
-          </p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+          {t('settingsTitle')}
+        </h2>
+        <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+          {t('settingsDesc')}
+        </p>
       </div>
 
-      {/* License - Kid Friendly */}
-      <div className="p-5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-800 rounded-2xl flex items-center justify-between gap-4">
+      {/* License Status Card */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🔑</span>
+          <div className="w-10 h-10 rounded-xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center shrink-0">
+            <Key className="w-5 h-5" />
+          </div>
           <div>
-            <h3 className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              License Status
+            <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+              {t('licenseStatus')}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {license?.payload.licenseType || 'Standard'} • {license?.daysRemaining || 0} days left
+            <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+              {t('currentLicense')} <span className="font-bold text-[#5A6D5B] dark:text-[#A3B5A4]">{license?.payload.licenseType || 'Standard'}</span> ({license?.daysRemaining || 0} {t('daysRemaining')})
             </p>
           </div>
         </div>
         <button
           onClick={onOpenLicenseModal}
-          className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
+          className="px-4 py-2 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-colors shadow-sm"
         >
-          Manage
+          {t('manageLicense')}
         </button>
       </div>
 
-      {/* Language & Theme */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm space-y-4">
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] flex items-center gap-2">
-          <span>🌍</span> Language & Theme
+      {/* Language & Appearance */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          {t('languageDisplay')}
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
-            <label className="font-bold text-sm text-gray-600 dark:text-gray-400 block mb-2">
-              🌐 Language
+            <label className="font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+              {t('language')}
             </label>
             <select
               value={settings.language}
               onChange={(e) => onUpdateSettings({ language: e.target.value as LanguageCode })}
-              className="w-full p-3 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-2.5 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] font-medium focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
             >
-              <option value="en">🇺🇸 English</option>
-              <option value="zh">🇨🇳 中文</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="zh">🇨🇳 简体中文</option>
+              <option value="ms">🇲🇾 Bahasa Melayu</option>
             </select>
           </div>
 
           <div>
-            <label className="font-bold text-sm text-gray-600 dark:text-gray-400 block mb-2">
-              🎨 Theme
+            <label className="font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+              {t('theme')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => onUpdateSettings({ theme: 'light' })}
-                className={`py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                className={`py-2 px-1 rounded-xl border font-semibold flex items-center justify-center gap-1 text-xs transition-all ${
                   settings.theme === 'light'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-[#5A6D5B] text-white border-[#5A6D5B] shadow-sm'
+                    : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8]'
                 }`}
               >
-                ☀️ Light
+                <Sun className="w-3.5 h-3.5" /> {t('lightMode')}
               </button>
               <button
                 onClick={() => onUpdateSettings({ theme: 'dark' })}
-                className={`py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                className={`py-2 px-1 rounded-xl border font-semibold flex items-center justify-center gap-1 text-xs transition-all ${
                   settings.theme === 'dark'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-[#5A6D5B] text-white border-[#5A6D5B] shadow-sm'
+                    : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8]'
                 }`}
               >
-                🌙 Dark
+                <Moon className="w-3.5 h-3.5" /> {t('darkMode')}
               </button>
               <button
                 onClick={() => onUpdateSettings({ theme: 'system' })}
-                className={`py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                className={`py-2 px-1 rounded-xl border font-semibold flex items-center justify-center gap-1 text-xs transition-all ${
                   settings.theme === 'system'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-[#5A6D5B] text-white border-[#5A6D5B] shadow-sm'
+                    : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8]'
                 }`}
               >
-                💻 Auto
+                <Globe className="w-3.5 h-3.5" /> {t('systemMode')}
               </button>
             </div>
           </div>
         </div>
 
+        {/* Font Size Adjuster */}
         <div>
-          <label className="font-bold text-sm text-gray-600 dark:text-gray-400 block mb-2">
-            📏 Text Size
+          <label className="font-semibold text-[#6B6559] dark:text-[#A09886] block text-xs mb-1">
+            {t('fontSize')}
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 text-xs">
             {(['small', 'medium', 'large'] as const).map((size) => (
               <button
                 key={size}
                 onClick={() => onUpdateSettings({ fontSize: size })}
-                className={`py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                className={`py-2 rounded-xl border font-semibold transition-all ${
                   settings.fontSize === size
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-[#5A6D5B] text-white border-[#5A6D5B] shadow-sm'
+                    : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8]'
                 }`}
               >
-                {size === 'small' ? '🔍 Small' : size === 'medium' ? '📝 Medium' : '📖 Large'}
+                {size === 'small' ? t('textSizeSmall') : size === 'medium' ? t('textSizeMedium') : t('textSizeLarge')}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Security - Kid Friendly */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] flex items-center gap-2 mb-4">
-          <span>🔒</span> App Lock
+      {/* App Lock Security Settings */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          {t('appLockTitle')}
         </h3>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between text-xs">
           <div>
-            <div className="font-bold text-[#2D2A26] dark:text-[#EAE7DF]">
-              PIN Code Lock
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {settings.securityEnabled 
-                ? `🔐 Locked (PIN: ${settings.pinCode || '1234'})` 
-                : '🔓 Unlocked'}
-            </div>
+            <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF] block">
+              {t('appLockDesc')}
+            </span>
+            <span className="text-[#7C776B] dark:text-[#A09886]">
+              {lang === 'zh' ? '开启后启动应用时需输入 4 位 PIN 码验证' : 'Requires 4-digit PIN code to unlock on launch'}
+            </span>
           </div>
           <button
             onClick={handleToggleSecurity}
-            className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-all ${
+            className={`px-4 py-2 rounded-xl font-bold transition-all ${
               settings.securityEnabled
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'bg-gradient-to-r from-green-400 to-green-500 text-white hover:scale-105'
+                ? 'bg-[#5A6D5B] text-white'
+                : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF]'
             }`}
           >
-            {settings.securityEnabled ? '🔓 Unlock' : '🔒 Lock'}
+            {settings.securityEnabled
+              ? (lang === 'zh' ? `已启用 (PIN: ${settings.pinCode || '1234'})` : `${t('appLockStatus')} (PIN: ${settings.pinCode || '1234'})`)
+              : (lang === 'zh' ? '已禁用' : t('appLockUnlocked'))}
           </button>
         </div>
       </div>
 
-      {/* Storage */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] flex items-center gap-2 mb-4">
-          <span>💾</span> Storage
+      {/* Local Browser DB (IndexedDB) + JSON Files Info */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif border-b border-[#E8E2D2] dark:border-[#353B35] pb-3 flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-[#5A6D5B] dark:text-[#A3B5A4]" />
+            {lang === 'zh' ? '本地浏览器数据库架构 (IndexedDB + JSON)' : 'Local Browser DB Architecture (IndexedDB + JSON)'}
+          </span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[#5A6D5B]/15 text-[#3E4A3E] dark:text-[#A3B5A4] font-semibold">
+            {storageInfo.isIndexedDBSupported ? 'IndexedDB Active' : 'LocalStorage Fallback'}
+          </span>
         </h3>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Used</div>
-            <div className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              {storageInfo.usageMB} MB
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3 bg-[#F5F2EA] dark:bg-[#2D322D] rounded-xl border border-[#E8E2D2] dark:border-[#353B35] space-y-1">
+            <div className="flex items-center gap-2 font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
+              <Database className="w-4 h-4 text-[#5A6D5B]" />
+              <span>{t('storageTitle')}</span>
             </div>
+            <p className="text-[11px] text-[#7C776B] dark:text-[#A09886]">
+              {t('storageUsed')}: <strong className="text-[#3E4A3E] dark:text-[#F5F2EA]">{storageInfo.usageMB} MB</strong> ({lang === 'zh' ? '配额上限:' : 'Quota Limit:'} {storageInfo.quotaMB} MB)
+            </p>
+            <p className="text-[10px] text-[#7C776B]/80 dark:text-[#A09886]/80 mt-1">
+              {lang === 'zh' ? '异步 IndexedDB 支持海量题目集合与图表离线存储。' : 'Asynchronous IndexedDB handles high-capacity collections & images.'}
+            </p>
           </div>
-          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Books</div>
-            <div className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              {appState.collections.length}
+
+          <div className="p-3 bg-[#F5F2EA] dark:bg-[#2D322D] rounded-xl border border-[#E8E2D2] dark:border-[#353B35] space-y-1">
+            <div className="flex items-center gap-2 font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
+              <FileCode className="w-4 h-4 text-[#5A6D5B]" />
+              <span>{lang === 'zh' ? 'JSON / ZIP 导入导出' : 'JSON / ZIP File Engine'}</span>
             </div>
+            <p className="text-[11px] text-[#7C776B] dark:text-[#A09886]">
+              {lang === 'zh' ? '已加载题库集合:' : 'Active Collections:'} <strong className="text-[#3E4A3E] dark:text-[#F5F2EA]">{appState.collections.length}</strong> {t('collections')}
+            </p>
+            <p className="text-[10px] text-[#7C776B]/80 dark:text-[#A09886]/80 mt-1">
+              {lang === 'zh' ? '完全兼容 AI 提示词生成的 JSON 及 ZIP 备份文件。' : 'Fully compatible with AI prompt JSON schema & ZIP backups.'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Reset - Kid Friendly */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-red-200 dark:border-red-800 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center gap-2 mb-4">
-          <span>⚠️</span> Danger Zone
+      {/* Storage & Reset */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <h3 className="font-bold text-sm text-rose-700 dark:text-rose-400 font-serif border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          {t('dangerZone')}
         </h3>
 
-        {!showResetConfirm ? (
-          <button
-            onClick={() => {
-              setResetCompleted(false);
-              setShowResetConfirm(true);
-            }}
-            className="px-5 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl text-sm transition-colors"
-          >
-            🗑️ Reset All Data
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <div className="p-4 bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
-              ⚠️ Are you sure? This will delete all your books and progress!
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  await onResetData();
-                  setShowResetConfirm(false);
-                  setResetCompleted(true);
-                  setTimeout(() => setResetCompleted(false), 5000);
-                }}
-                className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl text-sm transition-colors"
-              >
-                ✅ Yes, Reset
-              </button>
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                ❌ Cancel
-              </button>
+        <div className="space-y-4 text-xs">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF] block">
+                {t('resetAllData')}
+              </span>
+              <span className="text-[#7C776B] dark:text-[#A09886]">
+                {lang === 'zh' ? '清空所有答题记录，并将知识库恢复为初始状态。' : 'Clears study history and resets question collections to initial state.'}
+              </span>
             </div>
           </div>
-        )}
 
-        {resetCompleted && (
-          <div className="mt-3 p-3 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl text-green-700 dark:text-green-300 font-bold animate-pulse">
-            ✅ Reset complete! Time to start fresh! 🌱
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            {!showResetConfirm ? (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setResetCompleted(false);
+                    setShowResetConfirm(true);
+                  }}
+                  className="px-4 py-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl font-bold text-xs hover:bg-rose-100 transition-colors shadow-sm"
+                >
+                  {t('resetAllData')}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end gap-3 w-full">
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-100 dark:border-rose-900 rounded-xl w-full text-xs font-semibold">
+                  ⚠️ {t('confirmReset')}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      await onResetData();
+                      setShowResetConfirm(false);
+                      setResetCompleted(true);
+                      setTimeout(() => setResetCompleted(false), 5000);
+                    }}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-colors shadow-sm"
+                  >
+                    {t('confirmResetBtn')}
+                  </button>
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="px-4 py-2 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] rounded-xl font-bold text-xs hover:bg-[#EAE5D8] transition-colors"
+                  >
+                    {t('cancelBtn')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {resetCompleted && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900 rounded-xl text-xs font-semibold animate-pulse">
+              ✨ {t('resetComplete')}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

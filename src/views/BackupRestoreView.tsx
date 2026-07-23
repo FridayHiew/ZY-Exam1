@@ -1,10 +1,10 @@
-// BackupRestoreView.tsx - Kid-Friendly Version
+// BackupRestoreView.tsx
 import React, { useState } from 'react';
 import JSZip from 'jszip';
 import { AppStorageState, KnowledgeCollection, QuizResult } from '../types';
 import { saveAppState } from '../utils/storage';
 import { getTranslation } from '../utils/i18n';
-import { HardDriveDownload, Download, UploadCloud, ShieldCheck, AlertTriangle, CheckCircle2, FileJson, Sparkles } from 'lucide-react';
+import { HardDriveDownload, Download, UploadCloud, ShieldCheck, AlertTriangle, CheckCircle2, FileJson } from 'lucide-react';
 
 interface BackupRestoreViewProps {
   appState: AppStorageState;
@@ -17,7 +17,9 @@ export const BackupRestoreView: React.FC<BackupRestoreViewProps> = ({
 }) => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const lang = appState.settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const handleExportBackup = async () => {
     try {
@@ -39,15 +41,15 @@ export const BackupRestoreView: React.FC<BackupRestoreViewProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `my_learning_backup_${new Date().toISOString().split('T')[0]}.zip`;
+      a.download = `oktp_backup_${new Date().toISOString().split('T')[0]}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setSuccessMsg('🎉 Your learning backup was saved successfully!');
+      setSuccessMsg(t('backupSuccess'));
     } catch (e: any) {
-      setErrorMsg(`Oops! Couldn't create backup: ${e.message}`);
+      setErrorMsg(t('backupError').replace('{error}', e.message));
     }
   };
 
@@ -64,18 +66,18 @@ export const BackupRestoreView: React.FC<BackupRestoreViewProps> = ({
       if (file.name.endsWith('.zip')) {
         const zip = await JSZip.loadAsync(await file.arrayBuffer());
         const jsonEntry = zip.file('backup_data.json');
-        if (!jsonEntry) throw new Error('Invalid backup file!');
+        if (!jsonEntry) throw new Error(t('invalidBackup'));
         const text = await jsonEntry.async('text');
         backupData = JSON.parse(text);
       } else if (file.name.endsWith('.json')) {
         const text = await file.text();
         backupData = JSON.parse(text);
       } else {
-        throw new Error('Please upload a .zip or .json file!');
+        throw new Error(t('invalidBackup'));
       }
 
       if (!backupData || !backupData.collections || !Array.isArray(backupData.collections)) {
-        throw new Error('This file doesn\'t look like a valid backup.');
+        throw new Error(t('invalidBackup'));
       }
 
       const restoredState: AppStorageState = {
@@ -91,74 +93,83 @@ export const BackupRestoreView: React.FC<BackupRestoreViewProps> = ({
       onRestoreState(restoredState);
 
       setSuccessMsg(
-        `🎉 Restored successfully! ${backupData.collections.length} books and ${backupData.quizResults?.length || 0} quiz records loaded!`
+        t('restoreSuccess')
+          .replace('{count}', backupData.collections.length)
+          .replace('{history}', backupData.quizResults?.length || 0)
       );
       window.scrollTo(0, 0);
     } catch (e: any) {
-      setErrorMsg(`❌ Restore failed: ${e.message}`);
+      setErrorMsg(t('backupError').replace('{error}', e.message));
       window.scrollTo(0, 0);
     }
   };
 
   return (
     <div className="space-y-6 pb-12 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">💾</span>
-        <div>
-          <h2 className="text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-            Backup & Restore
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Keep your learning progress safe!
-          </p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          {t('backupTitle')}
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {t('backupDesc')}
+        </p>
       </div>
 
       {successMsg && (
-        <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-2xl flex items-center gap-3 text-green-800 dark:text-green-200 font-bold">
-          <span className="text-2xl">✅</span>
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 border-2 border-red-300 dark:border-red-700 rounded-2xl flex items-center gap-3 text-red-800 dark:text-red-200 font-bold">
-          <span className="text-2xl">❌</span>
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center gap-3 text-rose-800 dark:text-rose-300 text-xs font-semibold">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Export */}
-        <div className="p-6 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-center">
-          <div className="text-6xl mb-4">📤</div>
-          <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] mb-2">
-            Save Backup
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Download a copy of all your books and progress!
-          </p>
+        {/* Export Backup Card */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3">
+              <Download className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 mb-1">
+              {t('saveBackup')}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              {t('saveBackupDesc')}
+            </p>
+          </div>
+
           <button
             onClick={handleExportBackup}
-            className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
-            <span>💾 Download Backup</span>
+            <span>{t('exportBackup')}</span>
           </button>
         </div>
 
-        {/* Restore */}
-        <div className="p-6 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-center">
-          <div className="text-6xl mb-4">📥</div>
-          <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] mb-2">
-            Restore Backup
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Load a previously saved backup file!
-          </p>
-          <label className="w-full py-3 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform flex items-center justify-center gap-2 cursor-pointer">
+        {/* Restore Backup Card */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3">
+              <UploadCloud className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 mb-1">
+              {t('restoreBackupTitle')}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              {t('restoreBackupDesc')}
+            </p>
+          </div>
+
+          <label className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 cursor-pointer">
             <UploadCloud className="w-4 h-4" />
-            <span>📂 Choose Backup File</span>
+            <span>{t('chooseBackupFile')}</span>
             <input
               type="file"
               accept=".zip,.json"
@@ -169,11 +180,10 @@ export const BackupRestoreView: React.FC<BackupRestoreViewProps> = ({
         </div>
       </div>
 
-      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl flex items-start gap-3">
-        <span className="text-2xl">💡</span>
-        <div className="text-sm text-blue-700 dark:text-blue-300">
-          <span className="font-bold">Tip:</span> Save a backup regularly to protect your hard work!
-          Your backup includes all your books, questions, quiz history, and settings.
+      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-start gap-3">
+        <span className="text-xl">💡</span>
+        <div className="text-xs text-blue-700 dark:text-blue-300">
+          <span className="font-bold">{t('tipTitle')}</span> {t('tipDesc')}
         </div>
       </div>
     </div>

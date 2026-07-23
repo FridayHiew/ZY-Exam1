@@ -1,9 +1,10 @@
-// LibraryView.tsx - Kid-Friendly Version
+// LibraryView.tsx
 import React, { useState } from 'react';
 import { AppStorageState, KnowledgeCollection, QuizConfig } from '../types';
-import { exportCollectionAsZIP } from '../utils/exporter';
+import { exportCollectionAsJSON, exportCollectionAsZIP } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
-import { Play, Download, Trash2, BookOpen, Search, Folder, Plus, Star, Sparkles, Rocket } from 'lucide-react';
+import { resolveImagePath } from '../utils/storage';
+import { Plus, Play, FileText, Download, Trash2, Edit3, BookOpen, Layers, Check, X, Search, Folder, Tag } from 'lucide-react';
 
 interface LibraryViewProps {
   appState: AppStorageState;
@@ -20,237 +21,643 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 }) => {
   const { collections, settings } = appState;
   const lang = settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
   const [selectedCollection, setSelectedCollection] = useState<KnowledgeCollection | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const filteredCollections = collections.filter((c) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [editingCollection, setEditingCollection] = useState<KnowledgeCollection | null>(null);
+  const [editColName, setEditColName] = useState('');
+  const [editColDesc, setEditColDesc] = useState('');
+  const [editColGroup, setEditColGroup] = useState('General');
+  const [editColDifficulty, setEditColDifficulty] = useState('Master');
 
-  const getDifficultyEmoji = (diff: string) => {
-    if (diff === 'Beginner') return '🌱';
-    if (diff === 'Intermediate') return '🌿';
-    return '🌳';
+  const [newColName, setNewColName] = useState('');
+  const [newColDesc, setNewColDesc] = useState('');
+  const [newColGroup, setNewColGroup] = useState('General');
+  const [newColDifficulty, setNewColDifficulty] = useState('Master');
+
+  const allGroups = Array.from(new Set(collections.map((c) => c.group || 'General')));
+
+  const filteredCollections = collections.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.group || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.categories.some((cat) => cat.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesGroup = selectedGroupFilter === 'ALL' || (c.group || 'General') === selectedGroupFilter;
+
+    return matchesSearch && matchesGroup;
+  });
+
+  const groupedCollections: Record<string, KnowledgeCollection[]> = {};
+  filteredCollections.forEach((col) => {
+    const groupKey = col.group?.trim() || 'General';
+    if (!groupedCollections[groupKey]) {
+      groupedCollections[groupKey] = [];
+    }
+    groupedCollections[groupKey].push(col);
+  });
+
+  const handleStartEdit = (col: KnowledgeCollection) => {
+    setEditingCollection(col);
+    setEditColName(col.name);
+    setEditColDesc(col.description || '');
+    setEditColGroup(col.group || 'General');
+    setEditColDifficulty(col.difficulty || 'Master');
   };
 
-  const getDifficultyColor = (diff: string) => {
-    if (diff === 'Beginner') return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300';
-    if (diff === 'Intermediate') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300';
-    return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300';
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCollection || !editColName.trim()) return;
+
+    const updated = collections.map((c) => {
+      if (c.id === editingCollection.id) {
+        return {
+          ...c,
+          name: editColName.trim(),
+          description: editColDesc.trim(),
+          group: editColGroup.trim() || 'General',
+          difficulty: editColDifficulty,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return c;
+    });
+
+    onUpdateCollections(updated);
+
+    if (selectedCollection?.id === editingCollection.id) {
+      setSelectedCollection({
+        ...selectedCollection,
+        name: editColName.trim(),
+        description: editColDesc.trim(),
+        group: editColGroup.trim() || 'General',
+        difficulty: editColDifficulty,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    setEditingCollection(null);
   };
 
-  const getDifficultyLabel = (diff: string) => {
-    if (diff === 'Beginner') return '🌟 Easy';
-    if (diff === 'Intermediate') return '⭐ Medium';
-    return '🔥 Hard';
+  const handleCreateCollection = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newColName.trim()) return;
+
+    const newCol: KnowledgeCollection = {
+      id: `col_${Date.now()}`,
+      name: newColName.trim(),
+      description: newColDesc.trim() || 'Custom Knowledge Collection',
+      group: newColGroup.trim() || 'General',
+      difficulty: newColDifficulty,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      questionCount: 0,
+      categories: ['General'],
+      questions: [],
+    };
+
+    onUpdateCollections([...collections, newCol]);
+    setNewColName('');
+    setNewColDesc('');
+    setNewColGroup('General');
+    setNewColDifficulty('Master');
+    setShowCreateModal(false);
+  };
+
+  const handleDeleteCollection = (id: string) => {
+    if (confirm(lang === 'zh' ? '确定要删除这个书本及其所有题目吗？' : 'Are you sure you want to delete this collection and its questions?')) {
+      onUpdateCollections(collections.filter((c) => c.id !== id));
+      if (selectedCollection?.id === id) {
+        setSelectedCollection(null);
+      }
+    }
   };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
+      {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">📚</span>
-            <h2 className="text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-              My Learning Books
-            </h2>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {collections.length} book{collections.length !== 1 ? 's' : ''} ready to explore!
+          <h2 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+            {t('libraryTitle')}
+          </h2>
+          <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+            {t('libraryDesc')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => onNavigateTab('import')}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] hover:bg-[#EAE5D8] text-[#2D2A26] dark:text-[#EAE7DF] font-semibold text-xs transition-colors border border-[#E8E2D2] dark:border-[#353B35]"
           >
-            <Plus className="w-4 h-4" />
-            <span>➕ Add Book</span>
+            <Download className="w-4 h-4" />
+            <span>{t('importPackage')}</span>
           </button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="🔍 Search for a book..."
-          className="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl text-sm text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+      {/* Search & Group Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#A09886]" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-xs text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Folder className="w-4 h-4 text-[#5A6D5B]" />
+          <select
+            value={selectedGroupFilter}
+            onChange={(e) => setSelectedGroupFilter(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-xs font-semibold text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+          >
+            <option value="ALL">{t('allGroups')} ({allGroups.length})</option>
+            {allGroups.map((g) => (
+              <option key={g} value={g}>
+                {t('groupPrefix')} {g}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Collection Grid */}
-      {filteredCollections.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-[#242824] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
-          <div className="text-6xl mb-4">📖</div>
-          <p className="text-gray-500 dark:text-gray-400">
-            No books found. Click "Add Book" to get started!
+      {/* Collections Grouped by Group Field */}
+      {Object.keys(groupedCollections).length === 0 ? (
+        <div className="p-8 text-center bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl">
+          <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+            {t('noCollectionsFound')}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCollections.map((collection) => {
-            const qCount = collection.questions.length;
-            const diffEmoji = getDifficultyEmoji(collection.difficulty);
-            const diffColor = getDifficultyColor(collection.difficulty);
-            const diffLabel = getDifficultyLabel(collection.difficulty);
-
-            return (
-              <div
-                key={collection.id}
-                className="group bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg transition-all"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl">{diffEmoji}</span>
-                    <div>
-                      <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] line-clamp-1">
-                        {collection.name}
-                      </h3>
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${diffColor}`}>
-                        {diffLabel}
-                      </span>
-                    </div>
+        <div className="space-y-8">
+          {Object.entries(groupedCollections).map(([groupName, groupCols]) => (
+            <div key={groupName} className="space-y-3">
+              {/* Group Header */}
+              <div className="flex items-center justify-between border-b border-[#E8E2D2] dark:border-[#353B35] pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4]">
+                    <Folder className="w-4 h-4" />
                   </div>
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-lg">
-                    {qCount} ❓
+                  <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                    {t('groupPrefix')} {groupName}
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] font-bold border border-[#5A6D5B]/20">
+                    {groupCols.length} {t('collections')}
                   </span>
                 </div>
-
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
-                  {collection.description || '📝 Ready to learn!'}
-                </p>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2">
-                  <button
-                    disabled={qCount === 0}
-                    onClick={() =>
-                      onStartQuiz({
-                        collectionId: collection.id,
-                        collectionName: collection.name,
-                        mode: 'PRACTICE',
-                        questionCount: Math.min(10, qCount),
-                      })
-                    }
-                    className="w-full py-2.5 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    🚀 Start Learning!
-                  </button>
-
-                  <div className="flex gap-2">
-                    <button
-                      disabled={qCount === 0}
-                      onClick={() =>
-                        onStartQuiz({
-                          collectionId: collection.id,
-                          collectionName: collection.name,
-                          mode: 'EXAM',
-                          questionCount: Math.min(10, qCount),
-                        })
-                      }
-                      className="flex-1 py-2 bg-yellow-400 hover:bg-yellow-500 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      📝 Quiz
-                    </button>
-                    <button
-                      onClick={() => setSelectedCollection(collection)}
-                      className="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold rounded-xl text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    >
-                      👀 View
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete "${collection.name}"?`)) {
-                          onUpdateCollections(collections.filter((c) => c.id !== collection.id));
-                        }
-                      }}
-                      className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
               </div>
-            );
-          })}
+
+              {/* Collections Cards Grid for this Group */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupCols.map((collection) => (
+                  <div
+                    key={collection.id}
+                    className="p-5 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl shadow-sm flex flex-col justify-between hover:border-[#5A6D5B] transition-all"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] line-clamp-1 font-serif">
+                          {collection.name}
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5F2EA] dark:bg-[#2D322D] text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#E8E2D2] dark:border-[#353B35] shrink-0">
+                          {collection.questions.length} {t('questionsCount')}
+                        </span>
+                      </div>
+
+                      {/* Group Tag & Difficulty Badges */}
+                      <div className="flex items-center gap-1.5 flex-wrap my-2">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20">
+                          <Folder className="w-3 h-3" />
+                          {collection.group || 'General'}
+                        </span>
+
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            collection.difficulty === 'Beginner'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                              : collection.difficulty === 'Intermediate'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                          }`}
+                        >
+                          {collection.difficulty === 'Beginner'
+                            ? (lang === 'zh' ? '🟢 初级' : '🟢 Beginner')
+                            : collection.difficulty === 'Intermediate'
+                            ? (lang === 'zh' ? '🟡 中级' : '🟡 Intermediate')
+                            : (lang === 'zh' ? '🔴 高级' : '🔴 Master')}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-[#7C776B] dark:text-[#A09886] line-clamp-2 mb-3">
+                        {collection.description || (lang === 'zh' ? '暂无描述。' : 'No description provided.')}
+                      </p>
+
+                      {/* Categories Tags */}
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {collection.categories.slice(0, 3).map((cat) => (
+                          <span
+                            key={cat}
+                            className="text-[10px] px-2 py-0.5 rounded bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886]"
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2 pt-3 border-t border-[#E8E2D2] dark:border-[#353B35]">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          disabled={collection.questions.length === 0}
+                          onClick={() =>
+                            onStartQuiz({
+                              collectionId: collection.id,
+                              collectionName: collection.name,
+                              mode: 'PRACTICE',
+                              questionCount: Math.min(10, collection.questions.length),
+                            })
+                          }
+                          className="w-full py-2 px-3 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>{t('practice')}</span>
+                        </button>
+
+                        <button
+                          disabled={collection.questions.length === 0}
+                          onClick={() =>
+                            onStartQuiz({
+                              collectionId: collection.id,
+                              collectionName: collection.name,
+                              mode: 'EXAM',
+                              questionCount: Math.min(20, collection.questions.length),
+                              timeLimitMinutes: Math.min(20, collection.questions.length),
+                            })
+                          }
+                          className="w-full py-2 px-3 rounded-xl bg-[#EAE5D8] dark:bg-[#2D322D] hover:bg-[#D9C5B2] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-[#D9C5B2] dark:border-[#353B35]"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{t('exam')}</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <button
+                          onClick={() => setSelectedCollection(collection)}
+                          className="text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA] font-medium"
+                        >
+                          {t('viewQuestions')} ({collection.questions.length})
+                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleStartEdit(collection)}
+                            className="p-1.5 rounded-lg text-[#5A6D5B] hover:bg-[#F5F2EA] dark:hover:bg-[#2D322D] transition-colors"
+                            title={t('editCollection')}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => exportCollectionAsZIP(collection)}
+                            className="p-1.5 rounded-lg text-[#A09886] hover:bg-[#F5F2EA] dark:hover:bg-[#2D322D] transition-colors"
+                            title="Export Collection ZIP"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCollection(collection.id)}
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            title={t('deleteCollection')}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* View Collection Modal */}
-      {selectedCollection && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#242824] rounded-3xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl">{getDifficultyEmoji(selectedCollection.difficulty)}</span>
-                  <h3 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-                    {selectedCollection.name}
-                  </h3>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {selectedCollection.questions.length} questions
-                </p>
-              </div>
+      {/* Edit Collection Modal */}
+      {editingCollection && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                {t('editCollection')}
+              </h3>
               <button
-                onClick={() => setSelectedCollection(null)}
-                className="text-2xl hover:bg-gray-100 dark:hover:bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center"
+                onClick={() => setEditingCollection(null)}
+                className="text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA]"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 py-4 space-y-3">
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('collectionName')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editColName}
+                  onChange={(e) => setEditColName(e.target.value)}
+                  placeholder="e.g., Python Basics & OOP"
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('groupSubject')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  list="edit-group-suggestions"
+                  value={editColGroup}
+                  onChange={(e) => setEditColGroup(e.target.value)}
+                  placeholder="e.g., Cybersecurity, Cloud, Programming"
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+                <datalist id="edit-group-suggestions">
+                  {allGroups.map((g) => (
+                    <option key={g} value={g} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('difficultyLevel')} *
+                </label>
+                <select
+                  value={editColDifficulty}
+                  onChange={(e) => setEditColDifficulty(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                >
+                  <option value="Beginner">🟢 {t('beginner')}</option>
+                  <option value="Intermediate">🟡 {t('intermediate')}</option>
+                  <option value="Master">🔴 {t('master')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('description')}
+                </label>
+                <textarea
+                  value={editColDesc}
+                  onChange={(e) => setEditColDesc(e.target.value)}
+                  rows={3}
+                  placeholder="Short description of learning materials..."
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCollection(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[#7C776B] hover:bg-[#F5F2EA] dark:hover:bg-[#2D322D]"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-all shadow-sm"
+                >
+                  {t('saveChanges')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Collection Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                {t('createCollection')}
+              </h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCollection} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('collectionName')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newColName}
+                  onChange={(e) => setNewColName(e.target.value)}
+                  placeholder="e.g., Python Basics & OOP"
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('groupSubject')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  list="new-group-suggestions"
+                  value={newColGroup}
+                  onChange={(e) => setNewColGroup(e.target.value)}
+                  placeholder="e.g., Cybersecurity, Cloud, Programming"
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+                <datalist id="new-group-suggestions">
+                  {allGroups.map((g) => (
+                    <option key={g} value={g} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('difficultyLevel')} *
+                </label>
+                <select
+                  value={newColDifficulty}
+                  onChange={(e) => setNewColDifficulty(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                >
+                  <option value="Beginner">🟢 {t('beginner')}</option>
+                  <option value="Intermediate">🟡 {t('intermediate')}</option>
+                  <option value="Master">🔴 {t('master')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6B6559] dark:text-[#A09886] block mb-1">
+                  {t('description')}
+                </label>
+                <textarea
+                  value={newColDesc}
+                  onChange={(e) => setNewColDesc(e.target.value)}
+                  rows={3}
+                  placeholder="Short description of learning materials..."
+                  className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[#7C776B] hover:bg-[#F5F2EA] dark:hover:bg-[#2D322D]"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-all shadow-sm"
+                >
+                  {t('createCollection')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Collection Questions Details Drawer/Modal */}
+      {selectedCollection && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl p-6 shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D2] dark:border-[#353B35] shrink-0">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                      {selectedCollection.name}
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20">
+                      📁 {selectedCollection.group || 'General'}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                        selectedCollection.difficulty === 'Beginner'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : selectedCollection.difficulty === 'Intermediate'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800'
+                      }`}
+                    >
+                      {selectedCollection.difficulty === 'Beginner'
+                        ? '🟢 Beginner'
+                        : selectedCollection.difficulty === 'Intermediate'
+                        ? '🟡 Intermediate'
+                        : '🔴 Master'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+                    {selectedCollection.questions.length} Questions stored locally
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCollection(null)}
+                className="text-[#7C776B] hover:text-[#2D2A26] dark:hover:text-[#F5F2EA]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-3 py-4 flex-1 pr-1">
               {selectedCollection.questions.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  📭 No questions yet. Add some by importing!
+                <p className="text-xs text-[#7C776B] text-center py-6">
+                  {t('noQuestions')}
                 </p>
               ) : (
                 selectedCollection.questions.map((q, idx) => (
                   <div
                     key={q.id}
-                    className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700"
+                    className="p-3.5 bg-[#F5F2EA]/60 dark:bg-[#2D322D]/60 rounded-xl border border-[#E8E2D2] dark:border-[#353B35] text-xs"
                   >
-                    <div className="flex items-start gap-2">
-                      <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">
-                        Q{idx + 1}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="font-bold text-[#5A6D5B] dark:text-[#A3B5A4]">
+                        Q{idx + 1}. [{q.category}]
                       </span>
-                      <p className="text-sm text-[#2D2A26] dark:text-[#EAE7DF]">
-                        {q.questionText}
-                      </p>
+                      <span className="text-[10px] text-[#A09886]">ID: {q.id}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-1 mt-2">
+
+                    <p className="font-semibold text-[#2D2A26] dark:text-[#EAE7DF] mb-2">
+                      {q.questionText}
+                    </p>
+
+                    {q.image && (
+                      <div className="my-3 max-h-64 rounded-2xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-2">
+                        <img
+                          src={resolveImagePath(q.image)}
+                          alt="Question supporting diagram"
+                          className="max-h-60 object-contain rounded-xl"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-2">
                       {q.options.map((opt, oIdx) => (
                         <div
                           key={oIdx}
-                          className={`text-xs p-1.5 rounded-lg ${
+                          className={`p-2 rounded-lg border text-[11px] font-medium ${
                             oIdx === q.correctIndex
-                              ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-bold'
-                              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                              ? 'bg-[#5A6D5B]/15 dark:bg-[#5A6D5B]/30 border-[#5A6D5B] text-[#3E4A3E] dark:text-[#A3B5A4] font-bold'
+                              : 'bg-white dark:bg-[#242824] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF]'
                           }`}
                         >
-                          {String.fromCharCode(65 + oIdx)}. {opt}
+                          <span className="mr-1">{String.fromCharCode(65 + oIdx)}.</span> {opt}
                         </div>
                       ))}
                     </div>
+
+                    {q.explanation && (
+                      <p className="text-[11px] text-[#7C776B] dark:text-[#A09886] italic bg-white/50 dark:bg-[#242824]/50 p-2 rounded-lg">
+                        {t('questionExplanation')}: {q.explanation}
+                      </p>
+                    )}
                   </div>
                 ))
               )}
             </div>
 
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+            <div className="pt-4 border-t border-[#E8E2D2] dark:border-[#353B35] flex justify-end shrink-0">
               <button
                 onClick={() => setSelectedCollection(null)}
-                className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] font-semibold text-xs border border-[#E8E2D2] dark:border-[#353B35]"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>
