@@ -1,4 +1,4 @@
-// i18n.ts - 完整版，適合小學生的友好翻譯
+// i18n.ts
 import { LanguageCode } from '../types';
 
 export const TRANSLATIONS = {
@@ -27,6 +27,10 @@ export const TRANSLATIONS = {
     licenseType: '📋 License Type',
     expiresOn: '📅 Expires On',
     daysLeft: 'days left',
+    daysRemaining: 'days remaining',
+    currentLicense: 'Current License:',
+    manageLicense: 'Manage License',
+    licenseStatus: '🔑 License Status',
     
     // Dashboard Stats
     totalCollections: '📚 Books',
@@ -56,6 +60,27 @@ export const TRANSLATIONS = {
     // Library
     createNewCollection: '➕ New Book',
     importPackage: '📥 Add Book',
+    libraryTitle: '📚 My Books',
+    libraryDesc: 'Manage and organize your learning books',
+    searchPlaceholder: '🔍 Search for a book...',
+    allGroups: 'All Groups',
+    groupPrefix: '📁 Group:',
+    noCollectionsFound: '📖 No books found. Click "Add Book" to get started!',
+    questionsCount: 'questions',
+    practice: 'Practice',
+    exam: 'Quiz',
+    viewQuestions: 'View Questions',
+    editCollection: 'Edit Collection',
+    deleteCollection: 'Delete Collection',
+    collectionName: 'Collection Name',
+    groupSubject: 'Group / Subject',
+    difficultyLevel: 'Difficulty Level',
+    description: 'Description',
+    saveChanges: 'Save Changes',
+    createCollection: 'Create Collection',
+    noQuestions: '📭 No questions yet. Add some by importing!',
+    close: 'Close',
+    manageLibrary: 'Manage Library',
     
     // Quiz Modes
     practiceMode: '🎯 Practice',
@@ -91,11 +116,30 @@ export const TRANSLATIONS = {
     theme: '🎨 Theme',
     fontSize: '📏 Text Size',
     appLock: '🔒 App Lock',
+    appLockTitle: '🔒 App Lock',
+    appLockDesc: 'PIN Code Lock',
+    appLockStatus: '🔒 Locked',
+    appLockUnlocked: '🔓 Unlocked',
+    lock: '🔒 Lock',
+    unlock: '🔓 Unlock',
     
     // Backup
     exportBackup: '💾 Save Backup',
     restoreBackup: '📂 Restore Backup',
     clearData: '🗑️ Reset All',
+    backupTitle: '💾 Backup & Restore',
+    backupDesc: 'Keep your learning progress safe!',
+    saveBackup: '💾 Save Backup',
+    saveBackupDesc: 'Download a copy of all your books and progress!',
+    restoreBackupTitle: '📥 Restore Backup',
+    restoreBackupDesc: 'Load a previously saved backup file!',
+    chooseBackupFile: '📂 Choose Backup File',
+    backupSuccess: '🎉 Your learning backup was saved successfully!',
+    restoreSuccess: '🎉 Restored successfully! {count} books and {history} quiz records loaded!',
+    backupError: '❌ Restore failed: {error}',
+    invalidBackup: 'This file doesn\'t look like a valid backup.',
+    tipTitle: '💡 Tip:',
+    tipDesc: 'Save a backup regularly to protect your hard work! Your backup includes all your books, questions, quiz history, and settings.',
     
     // Admin License Generator
     adminTool: '🔑 Admin Tool',
@@ -150,6 +194,70 @@ export const TRANSLATIONS = {
     licenseRequired: '🔑 License Required',
     licenseRequiredDesc: 'This feature needs a license. Ask your teacher for help!',
     activateNow: '🔓 Activate Now',
+    
+    // Analytics - Additional
+    totalSessions: '📝 Total Sessions',
+    subjectGroupPerformance: '📁 Subject Groups',
+    difficultyDistribution: '📊 Difficulty Levels',
+    beginner: '🌱 Beginner',
+    intermediate: '🌿 Intermediate',
+    master: '🌳 Master',
+    beginnerDesc: 'Basic concepts and definitions',
+    intermediateDesc: 'Practical application and workflows',
+    masterDesc: 'Expert analysis and case studies',
+    collections: 'collections',
+    questionsAvailable: 'questions available',
+    notAttempted: 'Not Attempted',
+    accuracy: 'Accuracy',
+    weightedAccuracy: 'Weighted Accuracy',
+    totalAttempts: 'Total Attempts',
+    correctAttempts: 'correct',
+    weakTopicFlag: '⚠️ Weak Topic (<60%)',
+    noQuizRecords: 'No quiz records yet. Complete a quiz to see your progress!',
+    date: 'Date',
+    collection: 'Collection',
+    mode: 'Mode',
+    result: 'Result',
+    passedStatus: '✅ Passed',
+    failedStatus: '💪 Keep Going',
+    
+    // Import
+    importTitle: '📥 Add New Book',
+    importDesc: 'Upload a JSON or ZIP file to add fun questions!',
+    dropFileHere: '📤 Drop your file here!',
+    supportsJsonZip: 'Supports .json or .zip files',
+    chooseFile: '📂 Choose File',
+    aiHelper: '🤖 AI Helper',
+    aiHelperDesc: 'Ask AI to create questions for you!',
+    easy: '🌱 Easy',
+    medium: '🌿 Medium',
+    hard: '🌳 Hard',
+    copyPrompt: '📋 Copy Prompt',
+    copiedToClipboard: '✅ Copied!',
+    needTemplate: '📝 Need a template?',
+    downloadTemplate: '📄 Download Template',
+    importSuccess: '🎉 Success! Added {count} questions to "{name}"!',
+    goToLibrary: '📚 See My Books',
+    
+    // Settings
+    settingsTitle: '⚙️ Settings',
+    settingsDesc: 'Customize your learning experience!',
+    languageDisplay: '🌍 Language & Theme',
+    storageTitle: '💾 Storage',
+    storageUsed: 'Used',
+    storageBooks: 'Books',
+    dangerZone: '⚠️ Danger Zone',
+    resetAllData: '🗑️ Reset All Data',
+    confirmReset: '⚠️ Are you sure? This will delete all your books and progress!',
+    confirmResetBtn: '✅ Yes, Reset',
+    cancelBtn: '❌ Cancel',
+    resetComplete: '✅ Reset complete! Time to start fresh! 🌱',
+    textSizeSmall: '🔍 Small',
+    textSizeMedium: '📝 Medium',
+    textSizeLarge: '📖 Large',
+    
+    // Common
+    copy: '📋 Copy',
   },
   
   ms: {
@@ -177,6 +285,10 @@ export const TRANSLATIONS = {
     licenseType: '📋 Jenis Lesen',
     expiresOn: '📅 Tarikh Tamat',
     daysLeft: 'hari berbaki',
+    daysRemaining: 'hari berbaki',
+    currentLicense: 'Lesen Semasa:',
+    manageLicense: 'Urus Lesen',
+    licenseStatus: '🔑 Status Lesen',
     
     // Dashboard Stats
     totalCollections: '📚 Buku',
@@ -206,6 +318,27 @@ export const TRANSLATIONS = {
     // Library
     createNewCollection: '➕ Buku Baru',
     importPackage: '📥 Tambah Buku',
+    libraryTitle: '📚 Buku Saya',
+    libraryDesc: 'Urus dan atur buku pembelajaran anda',
+    searchPlaceholder: '🔍 Cari buku...',
+    allGroups: 'Semua Kumpulan',
+    groupPrefix: '📁 Kumpulan:',
+    noCollectionsFound: '📖 Tiada buku dijumpai. Klik "Tambah Buku" untuk mulakan!',
+    questionsCount: 'soalan',
+    practice: 'Latihan',
+    exam: 'Kuiz',
+    viewQuestions: 'Lihat Soalan',
+    editCollection: 'Sunting Koleksi',
+    deleteCollection: 'Padam Koleksi',
+    collectionName: 'Nama Koleksi',
+    groupSubject: 'Kumpulan / Subjek',
+    difficultyLevel: 'Tahap Kesukaran',
+    description: 'Penerangan',
+    saveChanges: 'Simpan Perubahan',
+    createCollection: 'Cipta Koleksi',
+    noQuestions: '📭 Tiada soalan lagi. Tambah dengan mengimport!',
+    close: 'Tutup',
+    manageLibrary: 'Urus Perpustakaan',
     
     // Quiz Modes
     practiceMode: '🎯 Latihan',
@@ -241,11 +374,30 @@ export const TRANSLATIONS = {
     theme: '🎨 Tema',
     fontSize: '📏 Saiz Teks',
     appLock: '🔒 Kunci Apl',
+    appLockTitle: '🔒 Kunci Apl',
+    appLockDesc: 'Kunci PIN',
+    appLockStatus: '🔒 Dikunci',
+    appLockUnlocked: '🔓 Tidak Dikunci',
+    lock: '🔒 Kunci',
+    unlock: '🔓 Buka',
     
     // Backup
     exportBackup: '💾 Simpan Sandaran',
     restoreBackup: '📂 Pulih Sandaran',
     clearData: '🗑️ Set Semula',
+    backupTitle: '💾 Sandaran & Pulih',
+    backupDesc: 'Pastikan kemajuan pembelajaran anda selamat!',
+    saveBackup: '💾 Simpan Sandaran',
+    saveBackupDesc: 'Muat turun salinan semua buku dan kemajuan anda!',
+    restoreBackupTitle: '📥 Pulih Sandaran',
+    restoreBackupDesc: 'Muatkan fail sandaran yang disimpan sebelum ini!',
+    chooseBackupFile: '📂 Pilih Fail Sandaran',
+    backupSuccess: '🎉 Sandaran pembelajaran anda berjaya disimpan!',
+    restoreSuccess: '🎉 Pemulihan berjaya! {count} buku dan {history} rekod kuiz dimuatkan!',
+    backupError: '❌ Pemulihan gagal: {error}',
+    invalidBackup: 'Fail ini bukan sandaran yang sah.',
+    tipTitle: '💡 Tip:',
+    tipDesc: 'Simpan sandaran secara berkala untuk lindungi usaha anda! Sandaran termasuk semua buku, soalan, sejarah kuiz, dan tetapan.',
     
     // Admin License Generator
     adminTool: '🔑 Alat Admin',
@@ -300,6 +452,70 @@ export const TRANSLATIONS = {
     licenseRequired: '🔑 Lesen Diperlukan',
     licenseRequiredDesc: 'Ciri ini memerlukan lesen. Minta bantuan guru anda!',
     activateNow: '🔓 Aktifkan Sekarang',
+    
+    // Analytics - Additional
+    totalSessions: '📝 Jumlah Sesi',
+    subjectGroupPerformance: '📁 Kumpulan Subjek',
+    difficultyDistribution: '📊 Tahap Kesukaran',
+    beginner: '🌱 Pemula',
+    intermediate: '🌿 Pertengahan',
+    master: '🌳 Mahir',
+    beginnerDesc: 'Konsep asas dan definisi',
+    intermediateDesc: 'Aplikasi praktikal dan aliran kerja',
+    masterDesc: 'Analisis pakar dan kajian kes',
+    collections: 'koleksi',
+    questionsAvailable: 'soalan tersedia',
+    notAttempted: 'Belum Dicuba',
+    accuracy: 'Ketepatan',
+    weightedAccuracy: 'Ketepatan Berwajaran',
+    totalAttempts: 'Jumlah Percubaan',
+    correctAttempts: 'betul',
+    weakTopicFlag: '⚠️ Topik Lemah (<60%)',
+    noQuizRecords: 'Tiada rekod kuiz lagi. Selesaikan kuiz untuk lihat kemajuan anda!',
+    date: 'Tarikh',
+    collection: 'Koleksi',
+    mode: 'Mod',
+    result: 'Keputusan',
+    passedStatus: '✅ Lulus',
+    failedStatus: '💪 Teruskan Usaha',
+    
+    // Import
+    importTitle: '📥 Tambah Buku Baru',
+    importDesc: 'Muat naik fail JSON atau ZIP untuk tambah soalan!',
+    dropFileHere: '📤 Letakkan fail anda di sini!',
+    supportsJsonZip: 'Menyokong fail .json atau .zip',
+    chooseFile: '📂 Pilih Fail',
+    aiHelper: '🤖 Pembantu AI',
+    aiHelperDesc: 'Minta AI cipta soalan untuk anda!',
+    easy: '🌱 Mudah',
+    medium: '🌿 Sederhana',
+    hard: '🌳 Susah',
+    copyPrompt: '📋 Salin Prompt',
+    copiedToClipboard: '✅ Disalin!',
+    needTemplate: '📝 Perlukan template?',
+    downloadTemplate: '📄 Muat Turun Template',
+    importSuccess: '🎉 Berjaya! {count} soalan ditambah ke "{name}"!',
+    goToLibrary: '📚 Lihat Buku Saya',
+    
+    // Settings
+    settingsTitle: '⚙️ Tetapan',
+    settingsDesc: 'Sesuaikan pengalaman pembelajaran anda!',
+    languageDisplay: '🌍 Bahasa & Tema',
+    storageTitle: '💾 Storaj',
+    storageUsed: 'Digunakan',
+    storageBooks: 'Buku',
+    dangerZone: '⚠️ Zon Berbahaya',
+    resetAllData: '🗑️ Set Semula Semua Data',
+    confirmReset: '⚠️ Anda pasti? Ini akan padam semua buku dan kemajuan anda!',
+    confirmResetBtn: '✅ Ya, Set Semula',
+    cancelBtn: '❌ Batal',
+    resetComplete: '✅ Set semula selesai! Masa untuk mulakan semula! 🌱',
+    textSizeSmall: '🔍 Kecil',
+    textSizeMedium: '📝 Sederhana',
+    textSizeLarge: '📖 Besar',
+    
+    // Common
+    copy: '📋 Salin',
   },
   
   zh: {
@@ -308,7 +524,7 @@ export const TRANSLATIONS = {
     sloganCn: '化繁為易，閣藏萬象',
     sloganEn: '快乐学习，智慧成长！',
     
-    // Navigation - 导航
+    // Navigation
     dashboard: '🏠 首页',
     library: '📚 我的书本',
     import: '📥 添加书本',
@@ -318,7 +534,7 @@ export const TRANSLATIONS = {
     backupRestore: '💾 备份与恢复',
     profile: '👤 我的资料',
     
-    // License - 许可证
+    // License
     activeLicense: '✅ 许可证已激活',
     licenseExpired: '⏰ 许可证已过期',
     gracePeriod: '🕐 7天宽限期',
@@ -327,8 +543,12 @@ export const TRANSLATIONS = {
     licenseType: '📋 许可证类型',
     expiresOn: '📅 到期日期',
     daysLeft: '天剩余',
+    daysRemaining: '天剩余',
+    currentLicense: '当前许可证：',
+    manageLicense: '管理许可证',
+    licenseStatus: '🔑 许可证状态',
     
-    // Dashboard Stats - 首页统计
+    // Dashboard Stats
     totalCollections: '📚 书本数',
     totalQuestions: '❓ 题目数',
     questionsAnswered: '✅ 已答题',
@@ -336,40 +556,61 @@ export const TRANSLATIONS = {
     streak: '🔥 连续学习',
     days: '天',
     
-    // Quick Actions - 快速操作
+    // Quick Actions
     quickStartPractice: '🚀 开始学习！',
     startExam: '📝 做测验',
     weakTopicsRecommendation: '💪 练习薄弱点',
     practiceWeakTopics: '🎯 去练习',
     noWeakTopics: '🌟 太棒了！所有科目都掌握得很好！',
     
-    // Welcome - 欢迎语
+    // Welcome
     welcomeBack: '👋 欢迎回来',
     activeLearner: '🌟 小学霸',
     streakDays: '天连续学习',
     readyDailyTraining: '今天准备好学习新知识了吗？🎉',
     
-    // Activity - 活动记录
+    // Activity
     recentActivity: '📝 最近的测验',
     noActivity: '🎮 还没有测验记录。开始你的第一次冒险吧！',
     
-    // Library - 书本库
+    // Library
     createNewCollection: '➕ 新建书本',
     importPackage: '📥 添加书本',
+    libraryTitle: '📚 我的书本',
+    libraryDesc: '管理和整理你的学习书本',
+    searchPlaceholder: '🔍 搜索书本...',
+    allGroups: '全部分组',
+    groupPrefix: '📁 分组：',
+    noCollectionsFound: '📖 还没有书本。点击 "添加书本" 开始吧！',
+    questionsCount: '道题目',
+    practice: '练习',
+    exam: '测验',
+    viewQuestions: '查看题目',
+    editCollection: '编辑书本',
+    deleteCollection: '删除书本',
+    collectionName: '书本名称',
+    groupSubject: '分组/科目',
+    difficultyLevel: '难度级别',
+    description: '描述',
+    saveChanges: '保存修改',
+    createCollection: '创建书本',
+    noQuestions: '📭 还没有题目。通过导入添加吧！',
+    close: '关闭',
+    manageLibrary: '管理书本',
     
-    // Quiz Modes - 测验模式
+    // Quiz Modes
     practiceMode: '🎯 练习模式',
     examMode: '📝 测验模式',
     mistakeReviewMode: '🔄 错题复习',
     weakTopicTraining: '💪 薄弱点训练',
     
-    // Quiz Controls - 测验控制
+    // Quiz Controls
     submitExam: '🎯 提交',
     nextQuestion: '➡️ 下一题',
     previousQuestion: '⬅️ 上一题',
     questionExplanation: '💡 解析',
     
-    // Results - 结果
+    // Results
     passed: '🌟 通过！',
     failed: '💪 继续加油！',
     passMark: '🎯 及格线',
@@ -378,12 +619,12 @@ export const TRANSLATIONS = {
     reviewAnswers: '📖 查看答案',
     retryQuiz: '🔄 再试一次',
     
-    // Security - 安全
+    // Security
     enterPin: '🔐 输入4位PIN码',
     unlockApp: '🔓 解锁',
     incorrectPin: '❌ PIN码错误，请重试。',
     
-    // Theme - 主题
+    // Theme
     lightMode: '☀️ 浅色',
     darkMode: '🌙 深色',
     systemMode: '💻 自动',
@@ -391,13 +632,32 @@ export const TRANSLATIONS = {
     theme: '🎨 主题',
     fontSize: '📏 字体大小',
     appLock: '🔒 应用锁',
+    appLockTitle: '🔒 应用锁',
+    appLockDesc: 'PIN码锁',
+    appLockStatus: '🔒 已锁定',
+    appLockUnlocked: '🔓 未锁定',
+    lock: '🔒 锁定',
+    unlock: '🔓 解锁',
     
-    // Backup - 备份
+    // Backup
     exportBackup: '💾 保存备份',
     restoreBackup: '📂 恢复备份',
     clearData: '🗑️ 重置所有',
+    backupTitle: '💾 备份与恢复',
+    backupDesc: '保护你的学习进度！',
+    saveBackup: '💾 保存备份',
+    saveBackupDesc: '下载所有书本和进度的副本！',
+    restoreBackupTitle: '📥 恢复备份',
+    restoreBackupDesc: '加载之前保存的备份文件！',
+    chooseBackupFile: '📂 选择备份文件',
+    backupSuccess: '🎉 学习备份保存成功！',
+    restoreSuccess: '🎉 恢复成功！加载了 {count} 本书和 {history} 条测验记录！',
+    backupError: '❌ 恢复失败：{error}',
+    invalidBackup: '这个文件不是有效的备份文件。',
+    tipTitle: '💡 提示：',
+    tipDesc: '定期保存备份，保护你的学习成果！备份包括所有书本、题目、测验历史和设置。',
     
-    // Admin License Generator - 管理员许可证生成器
+    // Admin License Generator
     adminTool: '🔑 管理员工具',
     licenseGenerator: '🔐 许可证生成器',
     generateSignedKeys: '为学习者生成签名许可证密钥',
@@ -424,7 +684,7 @@ export const TRANSLATIONS = {
     action: '操作',
     copy: '📋 复制',
     
-    // License Activation - 许可证激活
+    // License Activation
     licenseActivation: '🔑 激活许可证',
     licenseDesc: '输入许可证密钥解锁所有功能！',
     uniqueDeviceID: '📱 您的设备编号',
@@ -450,6 +710,70 @@ export const TRANSLATIONS = {
     licenseRequired: '🔑 需要许可证',
     licenseRequiredDesc: '此功能需要许可证，请向老师求助！',
     activateNow: '🔓 立即激活',
+    
+    // Analytics - Additional
+    totalSessions: '📝 测试次数',
+    subjectGroupPerformance: '📁 学科分组',
+    difficultyDistribution: '📊 难度分布',
+    beginner: '🌱 初级',
+    intermediate: '🌿 中级',
+    master: '🌳 高级',
+    beginnerDesc: '基础概念与定义',
+    intermediateDesc: '实际应用与流程',
+    masterDesc: '专家分析与案例研究',
+    collections: '个集合',
+    questionsAvailable: '道题目可供练习',
+    notAttempted: '暂未测试',
+    accuracy: '正确率',
+    weightedAccuracy: '加权正确率',
+    totalAttempts: '总作答',
+    correctAttempts: '次正确',
+    weakTopicFlag: '⚠️ 薄弱知识点 (<60%)',
+    noQuizRecords: '暂无测试记录。完成练习或测验后即可查看！',
+    date: '日期',
+    collection: '书本',
+    mode: '模式',
+    result: '结果',
+    passedStatus: '✅ 通过',
+    failedStatus: '💪 继续加油',
+    
+    // Import
+    importTitle: '📥 添加新书本',
+    importDesc: '上传 JSON 或 ZIP 文件，添加有趣的题目！',
+    dropFileHere: '📤 将文件拖放到这里！',
+    supportsJsonZip: '支持 .json 或 .zip 文件',
+    chooseFile: '📂 选择文件',
+    aiHelper: '🤖 AI 小助手',
+    aiHelperDesc: '让 AI 帮你出题！',
+    easy: '🌱 简单',
+    medium: '🌿 中等',
+    hard: '🌳 困难',
+    copyPrompt: '📋 复制提示词',
+    copiedToClipboard: '✅ 已复制！',
+    needTemplate: '📝 需要模板吗？',
+    downloadTemplate: '📄 下载模板',
+    importSuccess: '🎉 成功！添加了 {count} 道题目到 "{name}"！',
+    goToLibrary: '📚 查看我的书本',
+    
+    // Settings
+    settingsTitle: '⚙️ 设置',
+    settingsDesc: '自定义你的学习体验！',
+    languageDisplay: '🌍 语言与主题',
+    storageTitle: '💾 存储',
+    storageUsed: '已使用',
+    storageBooks: '书本',
+    dangerZone: '⚠️ 危险区域',
+    resetAllData: '🗑️ 重置所有数据',
+    confirmReset: '⚠️ 确定吗？这将删除所有书本和进度！',
+    confirmResetBtn: '✅ 确定重置',
+    cancelBtn: '❌ 取消',
+    resetComplete: '✅ 重置完成！重新开始吧！🌱',
+    textSizeSmall: '🔍 小号',
+    textSizeMedium: '📝 标准',
+    textSizeLarge: '📖 大号',
+    
+    // Common
+    copy: '📋 复制',
   },
 };
 

@@ -1,9 +1,9 @@
-// AnalyticsView.tsx - Kid-Friendly Version
+// AnalyticsView.tsx
 import React, { useMemo } from 'react';
 import { AppStorageState, QuizConfig } from '../types';
 import { calculateCategoryMetrics, calculateOverallStats } from '../utils/analytics';
 import { getTranslation } from '../utils/i18n';
-import { BarChart3, Target, Award, Clock, RotateCcw, AlertTriangle, CheckCircle2, XCircle, Folder, Layers, Shield, Sparkles, Star, Trophy, Rocket, Smile } from 'lucide-react';
+import { BarChart3, Target, Award, Clock, RotateCcw, AlertTriangle, CheckCircle2, XCircle, Folder, Layers, Shield, Sparkles } from 'lucide-react';
 
 interface AnalyticsViewProps {
   appState: AppStorageState;
@@ -16,133 +16,231 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 }) => {
   const { collections, quizResults, settings } = appState;
   const lang = settings.language;
+  const t = (key: any) => getTranslation(lang, key);
 
   const stats = calculateOverallStats(quizResults);
   const allQuestions = collections.flatMap((c) => c.questions);
   const categoryMetrics = calculateCategoryMetrics(quizResults, allQuestions);
 
-  const getAccuracyEmoji = (acc: number) => {
-    if (acc >= 90) return '🌟';
-    if (acc >= 70) return '⭐';
-    if (acc >= 50) return '💪';
-    return '📚';
-  };
+  // Calculate Group Performance
+  const groupStats = useMemo(() => {
+    const map: Record<string, { groupName: string; totalCols: number; totalQuestions: number; attempts: number; correct: number }> = {};
+    collections.forEach((col) => {
+      const gName = col.group?.trim() || 'General';
+      if (!map[gName]) {
+        map[gName] = { groupName: gName, totalCols: 0, totalQuestions: 0, attempts: 0, correct: 0 };
+      }
+      map[gName].totalCols += 1;
+      map[gName].totalQuestions += col.questions.length;
+    });
 
-  const getAccuracyColor = (acc: number) => {
-    if (acc >= 80) return 'text-green-600 dark:text-green-400';
-    if (acc >= 60) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
-  };
+    quizResults.forEach((res) => {
+      const col = collections.find((c) => c.id === res.collectionId);
+      const gName = col?.group?.trim() || 'General';
+      if (map[gName]) {
+        map[gName].attempts += res.totalQuestions;
+        map[gName].correct += res.correctCount;
+      }
+    });
+
+    return Object.values(map);
+  }, [collections, quizResults]);
+
+  // Calculate Difficulty Level Breakdown
+  const difficultyStats = useMemo(() => {
+    const diffMap: Record<string, { totalQuestions: number; count: number }> = {
+      Beginner: { totalQuestions: 0, count: 0 },
+      Intermediate: { totalQuestions: 0, count: 0 },
+      Master: { totalQuestions: 0, count: 0 },
+    };
+
+    collections.forEach((col) => {
+      const diff = col.difficulty || 'Master';
+      if (diffMap[diff]) {
+        diffMap[diff].totalQuestions += col.questions.length;
+        diffMap[diff].count += 1;
+      } else {
+        diffMap['Master'].totalQuestions += col.questions.length;
+        diffMap['Master'].count += 1;
+      }
+    });
+
+    return diffMap;
+  }, [collections]);
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">📊</span>
-        <div>
-          <h2 className="text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-            Your Progress
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            See how much you've learned!
-          </p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+          {t('analytics')}
+        </h2>
+        <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+          {lang === 'zh' ? '全面查看学习表现、学科分组进度和难度评估指标' : 'Comprehensive learning performance, subject group progress, and difficulty metrics'}
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl text-center shadow-sm">
-          <div className="text-3xl mb-1">📝</div>
-          <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm">
+          <span className="text-[10px] font-bold text-[#7C776B] uppercase tracking-wider block mb-1">
+            {t('totalSessions')}
+          </span>
+          <span className="text-2xl font-extrabold text-[#2D2A26] dark:text-[#EAE7DF] font-serif">
             {stats.totalSessions}
-          </div>
-          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Quizzes Done</div>
+          </span>
         </div>
 
-        <div className="p-4 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-2xl text-center shadow-sm">
-          <div className="text-3xl mb-1">✅</div>
-          <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+        <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm">
+          <span className="text-[10px] font-bold text-[#7C776B] uppercase tracking-wider block mb-1">
+            {t('questionsAnswered')}
+          </span>
+          <span className="text-2xl font-extrabold text-[#2D2A26] dark:text-[#EAE7DF] font-serif">
             {stats.totalQuestionsAnswered}
-          </div>
-          <div className="text-xs text-green-600 dark:text-green-400 font-medium">Questions Answered</div>
+          </span>
         </div>
 
-        <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-2xl text-center shadow-sm">
-          <div className="text-3xl mb-1">🎯</div>
-          <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+        <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm">
+          <span className="text-[10px] font-bold text-[#7C776B] uppercase tracking-wider block mb-1">
+            {t('overallAccuracy')}
+          </span>
+          <span className="text-2xl font-extrabold text-[#5A6D5B] dark:text-[#A3B5A4] font-serif">
             {stats.overallAccuracy}%
-          </div>
-          <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-            {getAccuracyEmoji(stats.overallAccuracy)} Accuracy
-          </div>
+          </span>
         </div>
 
-        <div className="p-4 bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900/30 dark:to-pink-800/30 rounded-2xl text-center shadow-sm">
-          <div className="text-3xl mb-1">⏱️</div>
-          <div className="text-2xl font-bold text-pink-700 dark:text-pink-300">
-            {Math.floor(stats.totalTimeSpentSeconds / 60)}m
-          </div>
-          <div className="text-xs text-pink-600 dark:text-pink-400 font-medium">Time Learning</div>
+        <div className="p-4 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm">
+          <span className="text-[10px] font-bold text-[#7C776B] uppercase tracking-wider block mb-1">
+            {t('timeSpent')}
+          </span>
+          <span className="text-2xl font-extrabold text-[#2D2A26] dark:text-[#EAE7DF] font-serif">
+            {Math.floor(stats.totalTimeSpentSeconds / 60)}{lang === 'zh' ? '分钟' : 'm'}
+          </span>
         </div>
       </div>
 
-      {/* Category Performance */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] flex items-center gap-2 mb-4">
-          <span>📚</span> Your Strongest Subjects
-        </h3>
+      {/* Subject Folders / Group Performance */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          <Folder className="w-5 h-5 text-[#5A6D5B]" />
+          <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+            {t('subjectGroupPerformance')}
+          </h3>
+        </div>
 
-        {categoryMetrics.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="text-4xl mb-2">📖</div>
-            <p className="text-gray-500 dark:text-gray-400">
-              Start learning to see your progress here!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {categoryMetrics.map((cat) => (
-              <div key={cat.category} className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-                    {cat.category}
-                  </span>
-                  <span className={`font-bold ${getAccuracyColor(cat.weightedAccuracy)}`}>
-                    {cat.weightedAccuracy}% {getAccuracyEmoji(cat.weightedAccuracy)}
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {groupStats.map((g) => {
+            const acc = g.attempts > 0 ? Math.round((g.correct / g.attempts) * 100) : 0;
+            return (
+              <div
+                key={g.groupName}
+                className="p-3.5 bg-[#F5F2EA]/60 dark:bg-[#2D322D]/60 rounded-xl border border-[#E8E2D2] dark:border-[#353B35] text-xs flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF] flex items-center gap-1.5 font-serif">
+                      <Folder className="w-3.5 h-3.5 text-[#5A6D5B]" />
+                      {g.groupName}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20">
+                      {g.totalCols} {t('collections')}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#7C776B] dark:text-[#A09886]">
+                    {g.totalQuestions} {t('questionsAvailable')}
+                  </p>
                 </div>
-                <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      cat.weightedAccuracy >= 80
-                        ? 'bg-gradient-to-r from-green-400 to-green-500'
-                        : cat.weightedAccuracy >= 60
-                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                        : 'bg-gradient-to-r from-red-400 to-red-500'
-                    }`}
-                    style={{ width: `${cat.weightedAccuracy}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <span>✅ {cat.correctAttempts} correct</span>
-                  <span>📝 {cat.totalAttempts} attempts</span>
+
+                <div className="mt-3 pt-2 border-t border-[#E8E2D2]/60 dark:border-[#353B35]">
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <span className="text-[#7C776B] dark:text-[#A09886]">{t('accuracy')}:</span>
+                    <span className="font-bold text-[#5A6D5B] dark:text-[#A3B5A4]">
+                      {g.attempts > 0 ? `${acc}%` : t('notAttempted')}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#EAE5D8] dark:bg-[#383E38] h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#5A6D5B] h-full rounded-full transition-all"
+                      style={{ width: `${acc}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Mistake Review */}
+      {/* Difficulty Level Distribution */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+          <Layers className="w-5 h-5 text-[#5A6D5B]" />
+          <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+            {t('difficultyDistribution')}
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {(['Beginner', 'Intermediate', 'Master'] as const).map((lvl) => {
+            const data = difficultyStats[lvl];
+            const badges = {
+              Beginner: {
+                color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
+                icon: '🟢',
+                name: t('beginner'),
+                desc: t('beginnerDesc'),
+              },
+              Intermediate: {
+                color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
+                icon: '🟡',
+                name: t('intermediate'),
+                desc: t('intermediateDesc'),
+              },
+              Master: {
+                color: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300',
+                icon: '🔴',
+                name: t('master'),
+                desc: t('masterDesc'),
+              },
+            };
+            const badge = badges[lvl];
+
+            return (
+              <div
+                key={lvl}
+                className={`p-4 rounded-xl border ${badge.color} text-xs flex flex-col justify-between`}
+              >
+                <div>
+                  <div className="flex items-center justify-between font-bold mb-1">
+                    <span className="text-sm font-serif">{badge.icon} {badge.name}</span>
+                    <span className="text-xs">{data.count} {t('collections')}</span>
+                  </div>
+                  <p className="text-[11px] opacity-80 mb-2">{badge.desc}</p>
+                </div>
+                <div className="pt-2 border-t border-current/20 font-semibold text-[11px]">
+                  {lang === 'zh' ? `共 ${data.totalQuestions} 道题目` : `${data.totalQuestions} Questions Total`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Mistake Review Shortcut Banner */}
       {stats.totalWrong > 0 && (
-        <div className="p-5 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-5 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">🔄</span>
+            <div className="w-10 h-10 rounded-xl bg-[#5A6D5B] text-white font-bold flex items-center justify-center shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA]">
-                Practice Mistakes
+              <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                {lang === 'zh'
+                  ? `复习历史错题（累计 ${stats.totalWrong} 道错题）`
+                  : `Review Past Mistakes (${stats.totalWrong} Incorrect Questions)`}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                You have {stats.totalWrong} questions to review!
+              <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
+                {lang === 'zh' ? '针对性练习答错题目，直至完全掌握知识点。' : 'Practice incorrect questions until you reach 100% mastery.'}
               </p>
             </div>
           </div>
@@ -153,81 +251,114 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 questionCount: 15,
               })
             }
-            className="px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-bold rounded-2xl text-sm shadow-md hover:scale-105 transition-transform whitespace-nowrap"
+            className="px-4 py-2 bg-[#5A6D5B] hover:bg-[#485749] text-white font-bold text-xs rounded-xl shadow-sm shrink-0 transition-colors"
           >
-            🔄 Review Mistakes
+            {lang === 'zh' ? '开启错题复习' : 'Start Mistake Review'}
           </button>
         </div>
       )}
 
-      {/* Recent History */}
-      <div className="p-5 bg-white dark:bg-[#242824] border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-[#3E4A3E] dark:text-[#F5F2EA] flex items-center gap-2 mb-4">
-          <span>📝</span> Recent Quizzes
+      {/* Category Accuracy Breakdown */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+          {lang === 'zh' ? '知识点分类表现与遗忘衰减指标' : 'Category Performance & Recency-Decay Metrics'}
+        </h3>
+
+        <div className="space-y-3">
+          {categoryMetrics.map((cat) => (
+            <div
+              key={cat.category}
+              className="p-3.5 bg-[#F5F2EA]/60 dark:bg-[#2D322D]/60 rounded-xl border border-[#E8E2D2] dark:border-[#353B35] text-xs"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-[#2D2A26] dark:text-[#EAE7DF]">
+                  {cat.category}
+                </span>
+                <span className="font-semibold text-[#7C776B] dark:text-[#A09886]">
+                  {t('weightedAccuracy')}: <span className="text-[#5A6D5B] dark:text-[#A3B5A4] font-bold">{cat.weightedAccuracy}%</span>
+                </span>
+              </div>
+
+              <div className="w-full bg-[#EAE5D8] dark:bg-[#383E38] h-2 rounded-full overflow-hidden my-1.5">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    cat.isWeak ? 'bg-[#82755E]' : 'bg-[#5A6D5B]'
+                  }`}
+                  style={{ width: `${cat.weightedAccuracy}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-[#7C776B] dark:text-[#A09886]">
+                <span>
+                  {lang === 'zh'
+                    ? `总作答：${cat.totalAttempts} 次（正确 ${cat.correctAttempts} 次）`
+                    : `${t('totalAttempts')}: ${cat.totalAttempts} (${cat.correctAttempts} ${t('correctAttempts')})`}
+                </span>
+                {cat.isWeak && (
+                  <span className="text-[#82755E] dark:text-[#D9C5B2] font-bold flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> {t('weakTopicFlag')}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Complete Learning History Log Table */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm">
+        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif mb-4">
+          {lang === 'zh' ? '完整测试会话记录' : 'Complete Quiz Session Records'}
         </h3>
 
         {quizResults.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="text-4xl mb-2">🎮</div>
-            <p className="text-gray-500 dark:text-gray-400">
-              No quizzes yet. Start your first one!
-            </p>
-          </div>
+          <p className="text-xs text-[#7C776B] text-center py-6">
+            {t('noQuizRecords')}
+          </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b-2 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                  <th className="pb-3 text-left">📅 Date</th>
-                  <th className="pb-3 text-left">📖 Book</th>
-                  <th className="pb-3 text-left">🎯 Score</th>
-                  <th className="pb-3 text-left">🏆 Result</th>
+                <tr className="border-b border-[#E8E2D2] dark:border-[#353B35] text-[#7C776B] font-semibold">
+                  <th className="pb-3">{t('date')}</th>
+                  <th className="pb-3">{t('collection')}</th>
+                  <th className="pb-3">{t('mode')}</th>
+                  <th className="pb-3">{t('score')}</th>
+                  <th className="pb-3">{t('result')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {quizResults.slice(-8).reverse().map((res) => (
-                  <tr key={res.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-3 text-gray-500 dark:text-gray-400 text-xs">
-                      {new Date(res.date).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 font-medium text-[#3E4A3E] dark:text-[#F5F2EA]">
-                      {res.collectionName}
-                    </td>
-                    <td className="py-3 font-bold text-blue-600 dark:text-blue-400">
-                      {res.scorePercentage}%
-                    </td>
-                    <td className="py-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        res.passed
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                      }`}>
-                        {res.passed ? '🌟 Passed' : '💪 Keep Going'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-[#E8E2D2]/50 dark:divide-[#353B35]">
+                {quizResults.map((res) => {
+                  const modeDisplay = lang === 'zh'
+                    ? res.mode === 'EXAM' ? '考试模式'
+                      : res.mode === 'PRACTICE' ? '练习模式'
+                      : res.mode === 'MISTAKE_REVIEW' ? '错题复习'
+                      : res.mode === 'WEAK_TOPIC' ? '薄弱专项' : res.mode
+                    : res.mode;
+                  return (
+                    <tr key={res.id}>
+                      <td className="py-3 text-[#7C776B]">{new Date(res.date).toLocaleDateString()}</td>
+                      <td className="py-3 font-semibold text-[#2D2A26] dark:text-[#EAE7DF]">{res.collectionName}</td>
+                      <td className="py-3 text-[#7C776B]">{modeDisplay}</td>
+                      <td className="py-3 font-bold text-[#5A6D5B] dark:text-[#A3B5A4]">{res.scorePercentage}%</td>
+                      <td className="py-3">
+                        <span
+                          className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                            res.passed
+                              ? 'bg-[#5A6D5B]/20 text-[#3E4A3E] dark:text-[#A3B5A4]'
+                              : 'bg-rose-100/80 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                          }`}
+                        >
+                          {res.passed ? t('passedStatus') : t('failedStatus')}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-      </div>
-
-      {/* Fun Fact */}
-      <div className="p-4 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">💡</span>
-          <div>
-            <div className="font-bold text-indigo-700 dark:text-indigo-300">
-              Progress Tip
-            </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400">
-              {stats.totalQuestionsAnswered > 0 
-                ? `You've answered ${stats.totalQuestionsAnswered} questions! Keep going to become a learning superstar! 🌟`
-                : 'Start learning today and watch your progress grow! 🚀'}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
