@@ -1,13 +1,13 @@
 import { LicenseData, LicensePayload, LicenseType } from '../types';
 
 // App offline secret key used for signing & verification
-const APP_SIGNING_SECRET = 'OFFLINE_KNOWLEDGE_PLATFORM_KEY_2026_RSA_SHA256_SECRET';
+const APP_SIGNING_SECRET = 'YIGA_LEARNING_PLATFORM_KEY_2026_RSA_SHA256_SECRET'; 
 
 /**
  * Generate or retrieve stable Device ID
  */
 export function getOrCreateDeviceId(): string {
-  const STORAGE_KEY = 'oktp_device_id';
+  const STORAGE_KEY = 'yiga_device_id';  // 原來是 'oktp_device_id'
   let deviceId = localStorage.getItem(STORAGE_KEY);
   if (!deviceId) {
     const randomHex = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1).toUpperCase();
@@ -85,8 +85,8 @@ export function generateLicenseKey(
  * Hardcoded Master Keys for Admin & User activation
  */
 export const HARDCODED_MASTER_KEYS = {
-  ADMIN: 'YIGA-ADMIN-MASTER-2026-KEY',
-  USER: 'YIGA-USER-MASTER-2026-KEY',
+  ADMIN: 'YIGA-ZYADMIN-MASTER-2026-KEY',
+  USER: 'YIGA-ZYUSER-MASTER-2026-KEY',
 };
 
 /**

@@ -4,7 +4,7 @@ import { LanguageCode } from '../types';
 export const TRANSLATIONS = {
   en: {
     // App Name & Slogan
-    appName: '⭐ YiGa Learning',
+    appName: '⭐ ZY YiGa Learning',
     sloganCn: '化繁為易，閣藏萬象',
     sloganEn: 'Learn smart, have fun!',
     

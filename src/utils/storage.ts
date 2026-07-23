@@ -3,22 +3,22 @@ import { SAMPLE_COLLECTIONS } from '../data/sampleCollections';
 import { buildLicenseData, generateLicenseKey, getOrCreateDeviceId, HARDCODED_MASTER_KEYS } from './crypto';
 import { loadStateFromIndexedDB, saveStateToIndexedDB, clearIndexedDB } from './indexedDB';
 
-const STORAGE_KEY = 'oktp_app_state_v1';
+const STORAGE_KEY = 'yiga_app_zy_v1';  // 原來是 'oktp_app_state_v1'
 
 const DEFAULT_SETTINGS: AppSettings = {
-  language: 'en',
-  theme: 'light',
+  language: 'zh',
+  theme: 'dark',
   fontSize: 'medium',
   securityEnabled: false,
   pinCode: undefined,
-  dailyStudyReminder: false,
+  dailyStudyReminder: true,
   reminderTime: '20:00',
-  examTimerDefaultMinutes: 1, // 1 min per q
-  defaultPassMark: 70,
+  examTimerDefaultMinutes: 10, // 1 min per q
+  defaultPassMark: 60,
 };
 
 const DEFAULT_PROFILE: UserProfile = {
-  displayName: 'Active Learner',
+  displayName: '菜鳥',
   avatarSeed: 'learner1',
   createdAt: new Date().toISOString(),
 };
