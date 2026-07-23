@@ -41,7 +41,7 @@ export const TRANSLATIONS = {
     days: 'days',
     
     // Quick Actions
-    quickStartPractice: '🚀 Start Learning!',
+    quickStartPractice: 'Start Learning!',
     startExam: '📝 Take Quiz',
     weakTopicsRecommendation: 'Practice Weak Spots',
     practiceWeakTopics: '🎯 Practice',
@@ -299,7 +299,7 @@ export const TRANSLATIONS = {
     days: 'hari',
     
     // Quick Actions
-    quickStartPractice: '🚀 Mula Belajar!',
+    quickStartPractice: 'Mula Belajar!',
     startExam: '📝 Buat Kuiz',
     weakTopicsRecommendation: 'Latih Topik Lemah',
     practiceWeakTopics: '🎯 Latih',
@@ -557,7 +557,7 @@ export const TRANSLATIONS = {
     days: '天',
     
     // Quick Actions
-    quickStartPractice: '🚀 开始学习！',
+    quickStartPractice: '开始学习！',
     startExam: '📝 做测验',
     weakTopicsRecommendation: '练习薄弱点',
     practiceWeakTopics: '🎯 去练习',
