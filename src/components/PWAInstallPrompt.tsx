@@ -1,4 +1,4 @@
-// PWAInstallPrompt.tsx - 修正版
+// PWAInstallPrompt.tsx - 完整修正版
 import React, { useState, useEffect } from 'react';
 import { Download, Share, X, Smartphone, CheckCircle } from 'lucide-react';
 import { LanguageCode } from '../types';
@@ -14,7 +14,6 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
   const [dismissed, setDismissed] = useState<boolean>(false);
   const [installedSuccess, setInstalledSuccess] = useState<boolean>(false);
 
-  // 檢查是否已經 dismiss (session storage)
   useEffect(() => {
     const hasDismissed = sessionStorage.getItem('pwa_prompt_dismissed') === 'true';
     if (hasDismissed) {
@@ -23,19 +22,16 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
   }, []);
 
   useEffect(() => {
-    // Check if app is already running as PWA / Standalone
     const isInStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
 
     setIsStandalone(isInStandalone);
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIOSDevice);
 
-    // Listen for beforeinstallprompt (Android / Chrome / Desktop)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -43,11 +39,9 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Listen for appinstalled
     const handleAppInstalled = () => {
       setInstalledSuccess(true);
       setDeferredPrompt(null);
-      // 安裝成功後，清除 dismiss 狀態
       sessionStorage.removeItem('pwa_prompt_dismissed');
     };
 
@@ -75,17 +69,15 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
 
   const handleDismiss = () => {
     setDismissed(true);
-    // 儲存到 session storage，關閉瀏覽器後重設
     sessionStorage.setItem('pwa_prompt_dismissed', 'true');
   };
 
-  // 如果已經安裝或關閉，不顯示
   if (isStandalone || dismissed) {
     return null;
   }
 
   // ============================================================
-  // Android / Chrome 原生安裝提示
+  // Android / Chrome
   // ============================================================
   if (deferredPrompt) {
     const installText = lang === 'zh' ? '安装离线 PWA 应用' 
@@ -137,24 +129,27 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
   }
 
   // ============================================================
-  // iOS 分享 -> 添加到主屏幕 提示
+  // iOS - 修正版：圖標放在正確位置
   // ============================================================
   if (isIOS) {
-    const iosTitle = lang === 'zh' ? '在 iOS 上安装此应用' 
-      : lang === 'ms' ? 'Pasang Aplikasi pada iOS' 
-      : 'Install on iOS Device';
+    const iosTitle = lang === 'zh' ? '📱 在 iOS 上安装此应用' 
+      : lang === 'ms' ? '📱 Pasang Aplikasi pada iOS' 
+      : '📱 Install on iOS Device';
     
+    // 定義圖標，放在外部
+    const shareIcon = <Share className="w-3.5 h-3.5 inline text-[#5A6D5B] dark:text-[#A3B5A4] align-middle" />;
+
     const iosDesc = lang === 'zh' ? (
       <span>
-        点击 Safari 底部 <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">分享按钮</strong>，然后选择 <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"添加到主屏幕"</strong>
+        点击 Safari 底部的 <strong>分享</strong> 按钮 {shareIcon}，然后选择 <strong>"添加到主屏幕"</strong>
       </span>
     ) : lang === 'ms' ? (
       <span>
-        Ketik butang <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">Kongsi</strong> di Safari dan pilih <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"Tambahkan ke Skrin Utama"</strong>
+        Ketik butang <strong>Kongsi</strong> {shareIcon} di Safari dan pilih <strong>"Tambahkan ke Skrin Utama"</strong>
       </span>
     ) : (
       <span>
-        Tap Safari <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">Share</strong> icon and select <strong className="text-[#5A6D5B] dark:text-[#A3B5A4]">"Add to Home Screen"</strong>
+        Tap Safari <strong>Share</strong> icon {shareIcon} and select <strong>"Add to Home Screen"</strong>
       </span>
     );
 
@@ -186,12 +181,12 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ lang }) => {
   }
 
   // ============================================================
-  // 安裝成功訊息
+  // 安裝成功
   // ============================================================
   if (installedSuccess) {
-    const successText = lang === 'zh' ? '已成功安装 PWA 应用！' 
-      : lang === 'ms' ? 'Aplikasi PWA berjaya dipasang!' 
-      : 'PWA App installed successfully!';
+    const successText = lang === 'zh' ? '✅ 已成功安装 PWA 应用！' 
+      : lang === 'ms' ? '✅ Aplikasi PWA berjaya dipasang!' 
+      : '✅ PWA App installed successfully!';
 
     return (
       <div className="mx-4 my-3 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
