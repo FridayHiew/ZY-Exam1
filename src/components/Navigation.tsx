@@ -1,4 +1,4 @@
-// Navigation.tsx - 修改 Mobile Bottom Navigation
+// Navigation.tsx
 import React from 'react';
 import { AppSettings } from '../types';
 import { getTranslation } from '../utils/i18n';
@@ -32,14 +32,32 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const lang = settings.language;
 
+  // ============================================================
+  // 修改 1: 明確標記哪些項目需要鎖定
+  // ============================================================
   const navItems = [
-    { id: 'dashboard' as TabType, label: getTranslation(lang, 'dashboard'), icon: Home },
-    { id: 'library' as TabType, label: getTranslation(lang, 'library'), icon: BookOpen },
-    { id: 'import' as TabType, label: getTranslation(lang, 'import'), icon: PlusCircle, isLocked: !hasValidLicense },
-    { id: 'analytics' as TabType, label: getTranslation(lang, 'analytics'), icon: BarChart3 },
-    { id: 'backup' as TabType, label: getTranslation(lang, 'backupRestore'), icon: HardDriveDownload, isLocked: !hasValidLicense },
-    ...(isAdmin ? [{ id: 'admin' as TabType, label: getTranslation(lang, 'adminGenerator'), icon: KeyRound }] : []),
-    { id: 'settings' as TabType, label: getTranslation(lang, 'settings'), icon: Settings },
+    { id: 'dashboard' as TabType, label: getTranslation(lang, 'dashboard'), icon: Home, isLocked: false },
+    { id: 'library' as TabType, label: getTranslation(lang, 'library'), icon: BookOpen, isLocked: false },
+    { 
+      id: 'import' as TabType, 
+      label: getTranslation(lang, 'import'), 
+      icon: PlusCircle, 
+      isLocked: !hasValidLicense  // Add Book 需要 license
+    },
+    { id: 'analytics' as TabType, label: getTranslation(lang, 'analytics'), icon: BarChart3, isLocked: false },
+    { 
+      id: 'backup' as TabType, 
+      label: getTranslation(lang, 'backupRestore'), 
+      icon: HardDriveDownload, 
+      isLocked: !hasValidLicense  // Backup 需要 license
+    },
+    ...(isAdmin ? [{ 
+      id: 'admin' as TabType, 
+      label: getTranslation(lang, 'adminGenerator'), 
+      icon: KeyRound, 
+      isLocked: false 
+    }] : []),
+    { id: 'settings' as TabType, label: getTranslation(lang, 'settings'), icon: Settings, isLocked: false },
   ];
 
   return (
@@ -63,6 +81,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 >
                   <Icon className="w-4 h-4" />
                   <span>{item.label}</span>
+                  {/* Desktop 鎖頭圖標 */}
                   {item.isLocked && <Lock className="w-3 h-3 text-rose-500/80 dark:text-rose-400/80 shrink-0" />}
                 </button>
               );
@@ -72,14 +91,10 @@ export const Navigation: React.FC<NavigationProps> = ({
       </nav>
 
       {/* ============================================================
-          Mobile Bottom Navigation - 修復滑動問題
+          Mobile Bottom Navigation - 修復鎖頭圖標位置
           ============================================================ */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FDFCF8]/95 dark:bg-[#1C1E1C]/95 backdrop-blur-md border-t border-[#E8E2D2] dark:border-[#353B35] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 px-0 shadow-lg transition-colors">
         
-        {/* ============================================================
-            修改 1: 使用 flex 容器 + overflow-x-auto 實現滑動
-            移除 justify-around，改用 gap + padding
-            ============================================================ */}
         <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden no-scrollbar px-3 py-0.5 snap-x snap-mandatory">
           
           {navItems.map((item) => {
@@ -89,39 +104,54 @@ export const Navigation: React.FC<NavigationProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectTab(item.id)}
-                // ============================================================
-                // 修改 2: 使用 flex-shrink-0 防止被壓縮
-                // 使用 snap-start 實現滾動對齊
-                // ============================================================
-                className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all min-h-[52px] flex-shrink-0 snap-start touch-manipulation ${
+                onClick={() => {
+                  // ============================================================
+                  // 修改 2: 如果被鎖定，點擊時顯示提示
+                  // ============================================================
+                  if (item.isLocked) {
+                    // 顯示提示訊息
+                    const msg = lang === 'zh' 
+                      ? '需要激活许可证才能使用此功能' 
+                      : lang === 'ms' 
+                      ? 'Lesen diperlukan untuk menggunakan ciri ini'
+                      : 'License required to use this feature';
+                    alert(msg);
+                    return;
+                  }
+                  onSelectTab(item.id);
+                }}
+                className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all min-h-[52px] flex-shrink-0 snap-start touch-manipulation ${
                   isActive
                     ? 'text-[#5A6D5B] dark:text-[#A3B5A4] font-bold'
                     : 'text-[#7C776B] dark:text-[#A09886] opacity-75 active:opacity-100'
-                }`}
+                } ${item.isLocked ? 'opacity-60' : ''}`}
               >
-                <div className={`p-1.5 rounded-lg ${isActive ? 'bg-[#5A6D5B]/15 dark:bg-[#708571]/30' : ''}`}>
-                  <Icon className="w-5 h-5" />
+                {/* 圖標容器 */}
+                <div className="relative">
+                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-[#5A6D5B]/15 dark:bg-[#708571]/30' : ''}`}>
+                    <Icon className={`w-5 h-5 ${item.isLocked ? 'text-gray-400 dark:text-gray-600' : ''}`} />
+                  </div>
+                  
+                  {/* ============================================================
+                    修改 3: 鎖頭圖標 - 顯示在右上角，更明顯
+                    ============================================================ */}
+                  {item.isLocked && (
+                    <div className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 border-2 border-white dark:border-[#1C1E1C] shadow-md z-10">
+                      <Lock className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
                 
-                {/* 標籤文字 - 簡短顯示 */}
-                <span className="text-[9px] tracking-tight leading-tight mt-0.5 whitespace-nowrap text-center max-w-[56px] truncate">
+                {/* 標籤文字 - 被鎖定的項目顯示灰色 */}
+                <span className={`text-[9px] tracking-tight leading-tight mt-0.5 whitespace-nowrap text-center max-w-[56px] truncate ${
+                  item.isLocked ? 'text-gray-400 dark:text-gray-600' : ''
+                }`}>
                   {item.label}
                 </span>
-                
-                {/* 鎖定圖標 */}
-                {item.isLocked && (
-                  <div className="absolute top-0 right-0 bg-rose-500 text-white rounded-full p-0.5 border-2 border-white dark:border-[#1C1E1C]">
-                    <Lock className="w-2.5 h-2.5" />
-                  </div>
-                )}
               </button>
             );
           })}
           
-          {/* ============================================================
-            修改 3: 添加右側空白區域，確保最後一個項目可以完全滾動到視野
-            ============================================================ */}
           <div className="flex-shrink-0 w-2" />
         </div>
       </div>

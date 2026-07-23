@@ -4,9 +4,9 @@ import { LanguageCode } from '../types';
 export const TRANSLATIONS = {
   en: {
     // App Name & Slogan
-    appName: '⭐ ZY YiGa Learning',
-    sloganCn: '化繁為易，閣藏萬象',
-    sloganEn: 'Learn smart, have fun!',
+    appName: '⭐ 智學樂園',           // 或 '⭐ 智慧學習'、'⭐ 快樂學堂'
+    sloganCn: '智慧學習，快樂成長',    // 或 '學海無涯，樂在其中'
+    sloganEn: 'Learn smart, grow happy!',
     
     // Navigation
     dashboard: 'Home',
@@ -33,11 +33,11 @@ export const TRANSLATIONS = {
     licenseStatus: '🔑 License Status',
     
     // Dashboard Stats
-    totalCollections: '📚 Books',
-    totalQuestions: '❓ Questions',
-    questionsAnswered: '✅ Answered',
-    overallAccuracy: '🎯 Accuracy',
-    streak: '🔥 Streak',
+    totalCollections: 'Books',
+    totalQuestions: 'Questions',
+    questionsAnswered: 'Answered',
+    overallAccuracy: 'Accuracy',
+    streak: 'Streak',
     days: 'days',
     
     // Quick Actions
@@ -291,11 +291,11 @@ export const TRANSLATIONS = {
     licenseStatus: '🔑 Status Lesen',
     
     // Dashboard Stats
-    totalCollections: '📚 Buku',
-    totalQuestions: '❓ Soalan',
-    questionsAnswered: '✅ Dijawab',
-    overallAccuracy: '🎯 Ketepatan',
-    streak: '🔥 Rekod',
+    totalCollections: 'Buku',
+    totalQuestions: 'Soalan',
+    questionsAnswered: 'Dijawab',
+    overallAccuracy: 'Ketepatan',
+    streak: 'Rekod',
     days: 'hari',
     
     // Quick Actions
@@ -549,11 +549,11 @@ export const TRANSLATIONS = {
     licenseStatus: '🔑 许可证状态',
     
     // Dashboard Stats
-    totalCollections: '📚 书本数',
-    totalQuestions: '❓ 题目数',
-    questionsAnswered: '✅ 已答题',
-    overallAccuracy: '🎯 正确率',
-    streak: '🔥 连续学习',
+    totalCollections: '书本数',
+    totalQuestions: '题目数',
+    questionsAnswered: '已答题',
+    overallAccuracy: '正确率',
+    streak: '连续学习',
     days: '天',
     
     // Quick Actions
