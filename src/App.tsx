@@ -163,7 +163,7 @@ export default function App() {
 
   // Render App UI
   return (
-    <div className="min-h-screen bg-[#FDFCF8] dark:bg-[#1C1E1C] text-[#2D2A26] dark:text-[#EAE7DF] font-sans transition-colors">
+        <div className="min-h-screen bg-[#FFF8F0] dark:bg-[#2A2A2A] text-[#2D2A26] dark:text-[#EAE7DF] font-sans transition-colors">
       {/* Splash Screen on Launch or Request */}
       {showSplashScreen && (
         <SplashScreen
