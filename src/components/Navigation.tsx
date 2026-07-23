@@ -22,7 +22,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const lang = settings.language;
 
-  const navItems = [
+  /*const navItems = [
     { id: 'dashboard' as TabType, label: getTranslation(lang, 'dashboard'), icon: LayoutDashboard },
     { id: 'library' as TabType, label: getTranslation(lang, 'library'), icon: Library },
     { id: 'import' as TabType, label: getTranslation(lang, 'import'), icon: UploadCloud, isLocked: !hasValidLicense },
@@ -31,7 +31,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     ...(isAdmin ? [{ id: 'admin' as TabType, label: getTranslation(lang, 'adminGenerator'), icon: KeyRound }] : []),
     { id: 'settings' as TabType, label: getTranslation(lang, 'settings'), icon: Settings },
   ];
-
+*/
   return (
     <>
       {/* Top Navigation Bar - Responsive for Tablet & Desktop */}
