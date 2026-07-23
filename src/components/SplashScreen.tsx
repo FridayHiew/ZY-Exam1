@@ -68,7 +68,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       <div className="flex flex-col items-center text-center my-auto max-w-md w-full px-4 animate-fade-in">
         {/* 1. Chinese Name */}
         <h1 className="text-3xl sm:text-4xl font-extrabold font-serif tracking-widest text-[#3E4A3E] dark:text-[#F5F2EA] mb-6">
-          易阁
+          卓越阁樓一
         </h1>
 
         {/* 2. Animated Bagua Logo Container with Pulsing Glow */}
@@ -83,7 +83,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* 3. English Name */}
         <div className="mb-6">
           <span className="text-base sm:text-lg font-bold tracking-widest text-[#C5A059] font-sans px-3 py-1 rounded-xl bg-[#5A6D5B]/10 dark:bg-[#708571]/20 border border-[#E8E2D2]/40 dark:border-[#353B35]/40">
-            YiGa
+            Zhuo Yue Library 1
           </span>
         </div>
 

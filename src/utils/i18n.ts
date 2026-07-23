@@ -4,7 +4,7 @@ import { LanguageCode } from '../types';
 export const TRANSLATIONS = {
   en: {
     // App Name & Slogan
-    appName: '⭐ 智學樂園',           // 或 '⭐ 智慧學習'、'⭐ 快樂學堂'
+    appName: ' Zhuo Yue',           // 或 '⭐ 智慧學習'、'⭐ 快樂學堂'
     sloganCn: '智慧學習，快樂成長',    // 或 '學海無涯，樂在其中'
     sloganEn: 'Learn smart, grow happy!',
     
@@ -262,7 +262,7 @@ export const TRANSLATIONS = {
   
   ms: {
     // App Name & Slogan
-    appName: '⭐ YiGa Pembelajaran',
+    appName: 'Zhuo Yue',
     sloganCn: '化繁為易，閣藏萬象',
     sloganEn: 'Belajar dengan bijak, berseronok!',
     
@@ -520,7 +520,7 @@ export const TRANSLATIONS = {
   
   zh: {
     // App Name & Slogan
-    appName: '⭐ 易阁学习',
+    appName: '卓越',
     sloganCn: '化繁為易，閣藏萬象',
     sloganEn: '快乐学习，智慧成长！',
     
