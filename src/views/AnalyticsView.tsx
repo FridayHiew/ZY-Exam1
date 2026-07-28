@@ -198,35 +198,62 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {(['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6'] as const).map((lvl) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          {(['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6'] as const).map((lvl) => {
             const data = difficultyStats[lvl] || { totalQuestions: 0, count: 0 };
-            const num = parseInt(lvl.match(/\d+/)?.[0] || '1', 10);
-            
-            // Assign color schemes dynamically based on primary year
-            // Years 1 & 2: green, 3 & 4: amber, 5 & 6: rose
-            const badgeColor = 
-              num <= 2
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
-                : num <= 4
-                ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
-                : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300';
-            
-            const badgeIcon = num <= 2 ? '🟢' : num <= 4 ? '🟡' : '🔴';
-            const badgeName = translateDifficulty(lang, lvl);
+            const badges: Record<string, { color: string; icon: string; name: string; desc: string }> = {
+              'Standard 1': {
+                color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
+                icon: '🟢',
+                name: getLocalizedDifficultyName('Standard 1', lang),
+                desc: lang === 'zh' ? '拼写与基础识字' : lang === 'ms' ? 'Asas ejaan & kosa kata' : 'Basic spelling and vocabulary',
+              },
+              'Standard 2': {
+                color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
+                icon: '🟢',
+                name: getLocalizedDifficultyName('Standard 2', lang),
+                desc: lang === 'zh' ? '简单句型与日常词汇' : lang === 'ms' ? 'Bina ayat mudah & kosa kata' : 'Simple sentence & daily words',
+              },
+              'Standard 3': {
+                color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
+                icon: '🟡',
+                name: getLocalizedDifficultyName('Standard 3', lang),
+                desc: lang === 'zh' ? '基础理解与语法应用' : lang === 'ms' ? 'Pemahaman asas & tatabahasa' : 'Comprehension & basic grammar',
+              },
+              'Standard 4': {
+                color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
+                icon: '🟡',
+                name: getLocalizedDifficultyName('Standard 4', lang),
+                desc: lang === 'zh' ? '语法进阶与情境表达' : lang === 'ms' ? 'Aplikasi tatabahasa & ungkapan' : 'Grammar usage & expressions',
+              },
+              'Standard 5': {
+                color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
+                icon: '🔵',
+                name: getLocalizedDifficultyName('Standard 5', lang),
+                desc: lang === 'zh' ? '阅读理解与关联词语' : lang === 'ms' ? 'Kefahaman, frasa & peribahasa' : 'Reading, phrases & idioms',
+              },
+              'Standard 6': {
+                color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
+                icon: '🔵',
+                name: getLocalizedDifficultyName('Standard 6', lang),
+                desc: lang === 'zh' ? '毕业总复习与深度理解' : lang === 'ms' ? 'Ulang kaji tamat sekolah & KBAT' : 'Final year revision & thinking',
+              },
+            };
+            const badge = badges[lvl];
 
             return (
               <div
                 key={lvl}
-                className={`p-3 rounded-xl border ${badgeColor} text-xs flex flex-col justify-between`}
+                className={`p-3 rounded-xl border ${badge.color} text-[11px] flex flex-col justify-between`}
               >
                 <div>
-                  <div className="flex flex-col gap-1 font-bold mb-1">
-                    <span className="text-[13px] font-serif shrink-0">{badgeIcon} {badgeName}</span>
-                    <span className="text-[10px] opacity-80 font-normal">{data.count} {t('collections')}</span>
+                  <div className="flex flex-col font-bold mb-1.5">
+                    <span className="text-xs font-serif leading-tight">{badge.icon} {badge.name}</span>
+                    <span className="text-[9px] opacity-75 mt-0.5">{data.count} {t('collections')}</span>
                   </div>
+                  <p className="text-[10px] opacity-90 leading-tight mb-2 min-h-[32px]">{badge.desc}</p>
                 </div>
-                <div className="pt-2 border-t border-current/20 font-semibold text-[10px]">
+                <div className="pt-1.5 border-t border-current/20 font-semibold text-[10px]">
                   {lang === 'zh' ? `共 ${data.totalQuestions} 题` : `${data.totalQuestions} Qs Total`}
                 </div>
               </div>
@@ -234,7 +261,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           })}
         </div>
       </div>
-
 
       {/* Mistake Review Shortcut Banner */}
       {stats.totalWrong > 0 && (
