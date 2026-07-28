@@ -206,37 +206,31 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
                 icon: '🟢',
                 name: getLocalizedDifficultyName('Standard 1', lang),
-                desc: lang === 'zh' ? '拼写与基础识字' : lang === 'ms' ? 'Asas ejaan & kosa kata' : 'Basic spelling and vocabulary',
               },
               'Standard 2': {
                 color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
                 icon: '🟢',
                 name: getLocalizedDifficultyName('Standard 2', lang),
-                desc: lang === 'zh' ? '简单句型与日常词汇' : lang === 'ms' ? 'Bina ayat mudah & kosa kata' : 'Simple sentence & daily words',
               },
               'Standard 3': {
                 color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
                 icon: '🟡',
                 name: getLocalizedDifficultyName('Standard 3', lang),
-                desc: lang === 'zh' ? '基础理解与语法应用' : lang === 'ms' ? 'Pemahaman asas & tatabahasa' : 'Comprehension & basic grammar',
               },
               'Standard 4': {
                 color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
                 icon: '🟡',
                 name: getLocalizedDifficultyName('Standard 4', lang),
-                desc: lang === 'zh' ? '语法进阶与情境表达' : lang === 'ms' ? 'Aplikasi tatabahasa & ungkapan' : 'Grammar usage & expressions',
               },
               'Standard 5': {
                 color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
                 icon: '🔵',
                 name: getLocalizedDifficultyName('Standard 5', lang),
-                desc: lang === 'zh' ? '阅读理解与关联词语' : lang === 'ms' ? 'Kefahaman, frasa & peribahasa' : 'Reading, phrases & idioms',
               },
               'Standard 6': {
                 color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
                 icon: '🔵',
                 name: getLocalizedDifficultyName('Standard 6', lang),
-                desc: lang === 'zh' ? '毕业总复习与深度理解' : lang === 'ms' ? 'Ulang kaji tamat sekolah & KBAT' : 'Final year revision & thinking',
               },
             };
             const badge = badges[lvl];
