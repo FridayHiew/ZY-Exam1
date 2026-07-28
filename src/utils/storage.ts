@@ -7,7 +7,7 @@ const STORAGE_KEY = 'yiga_app_zy_v1';  // 原來是 'oktp_app_state_v1'
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh',
-  theme: 'Light',
+  theme: 'light',
   fontSize: 'medium',
   securityEnabled: false,
   pinCode: undefined,
@@ -51,13 +51,9 @@ export function loadAppState(): AppStorageState {
     activeLicense = buildLicenseData(state.license.key, deviceId, newWatermark);
   }
 
-  let collections = (state.collections && state.collections.length > 0)
+  const collections: KnowledgeCollection[] = Array.isArray(state.collections)
     ? state.collections
     : SAMPLE_COLLECTIONS;
-
-  if (collections.some((c) => c.id === 'col-aws-cloud-01') || !collections.some((c) => c.id === 'col-cloud-02')) {
-    collections = SAMPLE_COLLECTIONS;
-  }
 
   const fullState: AppStorageState = {
     deviceId,
@@ -80,7 +76,7 @@ export function loadAppState(): AppStorageState {
  */
 export async function loadAppStateAsync(): Promise<AppStorageState> {
   const idbState = await loadStateFromIndexedDB();
-  if (idbState && idbState.collections && idbState.collections.length > 0) {
+  if (idbState && Array.isArray(idbState.collections)) {
     // Save to localStorage as synced cache
     saveAppState(idbState);
     return idbState;

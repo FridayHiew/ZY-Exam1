@@ -22,16 +22,17 @@ function formatCollectionForExport(collection: KnowledgeCollection) {
   return {
     collectionName: collection.name,
     version: collection.version || 1,
-    description: collection.description || 'Expert professional assessment generated from uploaded document.',
+    description: collection.description || 'Kumpulan soalan pembelajaran.',
     group: collection.group || 'General',
-    difficulty: collection.difficulty || 'Master',
+    difficulty: collection.difficulty || 'Standard 1',
+    tags: collection.tags || [],
     questions: collection.questions.map((q) => {
       const idx = q.correctIndex >= 0 && q.correctIndex <= 3 ? q.correctIndex : 0;
       const optionLetters = ['A', 'B', 'C', 'D'];
       return {
         id: q.id,
         category: q.category || '',
-        difficulty: q.difficulty || 'Expert',
+        difficulty: q.difficulty || collection.difficulty || 'Standard 1',
         knowledgeLevel: q.knowledgeLevel || 'Analyze',
         questionType: q.questionType || 'Analysis',
         tags: q.tags || [],
@@ -96,49 +97,30 @@ export async function exportCollectionAsZIP(collection: KnowledgeCollection) {
  */
 export function downloadSampleJSONTemplate() {
   const template = {
-    collectionName: 'Generated Learning Package',
+    collectionName: 'Kosa Kata Bahasa Melayu (KSSR)',
     version: 1,
-    description: 'Expert professional assessment generated from uploaded document.',
-    group: 'IT & Networking',
-    difficulty: 'Master',
+    description: 'Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.',
+    group: 'Malay',
+    difficulty: 'Tahun 2',
+    tags: [
+      'kosa-kata'
+    ],
     questions: [
       {
-        id: 'q001',
-        category: 'Networking',
-        difficulty: 'Expert',
-        knowledgeLevel: 'Analyze',
-        questionType: 'Analysis',
-        tags: ['networking', 'protocols'],
-        questionText: 'Which protocol resolves domain names to IP addresses?',
+        id: 'ms-q001',
+        category: 'Sekolah & Rumah',
+        questionText: 'perpustakaan',
         statements: {},
-        optionA: 'DHCP',
-        optionB: 'DNS',
-        optionC: 'SNMP',
-        optionD: 'FTP',
-        correctAnswer: 'B',
-        explanation: 'Provide detailed reasoning. Explain why the correct answer is selected and why other options are incorrect. Reference: Chapter/Section/Page.',
-        sourceReference: 'Chapter 4, Section 2',
-        imageFile: '',
-      },
-      {
-        id: 'q002',
-        category: 'Security',
-        difficulty: 'Expert',
-        knowledgeLevel: 'Analyze',
-        questionType: 'Analysis',
-        tags: ['security', 'cia'],
-        questionText: 'What does the \'C\' in the CIA triad stand for?',
-        statements: {},
-        optionA: 'Control',
-        optionB: 'Confidentiality',
-        optionC: 'Cryptography',
-        optionD: 'Compliance',
-        correctAnswer: 'B',
-        explanation: 'Provide detailed reasoning. Explain why the correct answer is selected and why other options are incorrect. Reference: Chapter/Section/Page.',
-        sourceReference: 'Chapter 1, Page 12',
-        imageFile: '',
-      },
-    ],
+        optionA: 'prepustakaan',
+        optionB: 'perpustakan',
+        optionC: 'perpustakaan',
+        optionD: 'perpustakkaan',
+        correctAnswer: 'C',
+        explanation: '图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）',
+        sourceReference: 'Buku Teks BM Tahun 3, Unit 4',
+        imageFile: ''
+      }
+    ]
   };
 
   const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });

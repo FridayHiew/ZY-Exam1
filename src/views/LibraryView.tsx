@@ -1,10 +1,11 @@
 // LibraryView.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AppStorageState, KnowledgeCollection, QuizConfig } from '../types';
 import { exportCollectionAsJSON, exportCollectionAsZIP } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
 import { resolveImagePath } from '../utils/storage';
-import { Plus, Play, FileText, Download, Trash2, Edit3, BookOpen, Layers, Check, X, Search, Folder, Tag } from 'lucide-react';
+import { getLocalizedCollections, getLocalizedDifficultyName } from '../utils/collectionTranslations';
+import { Plus, Play, FileText, Download, Trash2, Edit3, BookOpen, Layers, Check, X, Search, Folder, Tag, Award } from 'lucide-react';
 
 interface LibraryViewProps {
   appState: AppStorageState;
@@ -25,6 +26,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
+  const [selectedDifficultyFilter, setSelectedDifficultyFilter] = useState<string>('ALL');
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
   const [selectedCollection, setSelectedCollection] = useState<KnowledgeCollection | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -32,41 +35,117 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [editColName, setEditColName] = useState('');
   const [editColDesc, setEditColDesc] = useState('');
   const [editColGroup, setEditColGroup] = useState('General');
-  const [editColDifficulty, setEditColDifficulty] = useState('Master');
+  const [editColDifficulty, setEditColDifficulty] = useState('Standard 1');
 
   const [newColName, setNewColName] = useState('');
   const [newColDesc, setNewColDesc] = useState('');
   const [newColGroup, setNewColGroup] = useState('General');
-  const [newColDifficulty, setNewColDifficulty] = useState('Master');
+  const [newColDifficulty, setNewColDifficulty] = useState('Standard 1');
 
-  const allGroups = Array.from(new Set(collections.map((c) => c.group || 'General')));
+  const localizedCollections = useMemo(
+    () => getLocalizedCollections(collections, lang),
+    [collections, lang]
+  );
 
-  const filteredCollections = collections.filter((c) => {
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.group || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.categories.some((cat) => cat.toLowerCase().includes(searchTerm.toLowerCase()));
+  const allGroups = useMemo(
+    () => Array.from(new Set(localizedCollections.map((c) => c.group || 'General'))),
+    [localizedCollections]
+  );
 
-    const matchesGroup = selectedGroupFilter === 'ALL' || (c.group || 'General') === selectedGroupFilter;
+  // Filter collections by group first, to determine available difficulties & tags for further filtering
+  const groupFilteredCollectionsForOptions = useMemo(() => {
+    return localizedCollections.filter((c) => {
+      return selectedGroupFilter === 'ALL' || (c.group || 'General') === selectedGroupFilter;
+    });
+  }, [localizedCollections, selectedGroupFilter]);
 
-    return matchesSearch && matchesGroup;
-  });
+  // Extract unique tags present across selected group
+  const allTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    groupFilteredCollectionsForOptions.forEach((c) => {
+      if (Array.isArray(c.tags)) {
+        c.tags.forEach((tag) => {
+          if (tag && tag.trim()) {
+            tagsSet.add(tag.trim());
+          }
+        });
+      }
+    });
+    return Array.from(tagsSet);
+  }, [groupFilteredCollectionsForOptions]);
 
-  const groupedCollections: Record<string, KnowledgeCollection[]> = {};
-  filteredCollections.forEach((col) => {
-    const groupKey = col.group?.trim() || 'General';
-    if (!groupedCollections[groupKey]) {
-      groupedCollections[groupKey] = [];
+  // Extract unique difficulties present across selected group
+  const availableDifficulties = useMemo(() => {
+    const diffsSet = new Set<string>();
+    groupFilteredCollectionsForOptions.forEach((c) => {
+      if (c.difficulty && c.difficulty.trim()) {
+        diffsSet.add(c.difficulty.trim());
+      }
+    });
+    return Array.from(diffsSet);
+  }, [groupFilteredCollectionsForOptions]);
+
+  // Fixed standard list 1 to 6
+  const fixedStandards = useMemo(() => {
+    return ['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6'].map((std) => ({
+      key: std,
+      localizedName: getLocalizedDifficultyName(std, lang),
+    }));
+  }, [lang]);
+
+  // List of standards available within the current group selection
+  const availableStandards = useMemo(() => {
+    return fixedStandards.filter((std) => availableDifficulties.includes(std.localizedName));
+  }, [fixedStandards, availableDifficulties]);
+
+  // Automatically reset difficulty and tag filters if they are no longer applicable in the selected group
+  React.useEffect(() => {
+    if (selectedDifficultyFilter !== 'ALL' && !availableDifficulties.includes(selectedDifficultyFilter)) {
+      setSelectedDifficultyFilter('ALL');
     }
-    groupedCollections[groupKey].push(col);
-  });
+  }, [availableDifficulties, selectedDifficultyFilter]);
+
+  React.useEffect(() => {
+    if (selectedTagFilter !== 'ALL' && !allTags.includes(selectedTagFilter)) {
+      setSelectedTagFilter('ALL');
+    }
+  }, [allTags, selectedTagFilter]);
+
+  const filteredCollections = useMemo(() => {
+    return localizedCollections.filter((c) => {
+      const matchesSearch =
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.group || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.difficulty || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.tags || []).some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        c.categories.some((cat) => cat.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesGroup = selectedGroupFilter === 'ALL' || (c.group || 'General') === selectedGroupFilter;
+      const matchesDifficulty = selectedDifficultyFilter === 'ALL' || c.difficulty === selectedDifficultyFilter;
+      const matchesTag = selectedTagFilter === 'ALL' || (c.tags || []).includes(selectedTagFilter);
+
+      return matchesSearch && matchesGroup && matchesDifficulty && matchesTag;
+    });
+  }, [localizedCollections, searchTerm, selectedGroupFilter, selectedDifficultyFilter, selectedTagFilter]);
+
+  const groupedCollections = useMemo<Record<string, KnowledgeCollection[]>>(() => {
+    const groups: Record<string, KnowledgeCollection[]> = {};
+    filteredCollections.forEach((col) => {
+      const groupKey = col.group?.trim() || 'General';
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(col);
+    });
+    return groups;
+  }, [filteredCollections]);
 
   const handleStartEdit = (col: KnowledgeCollection) => {
     setEditingCollection(col);
     setEditColName(col.name);
     setEditColDesc(col.description || '');
     setEditColGroup(col.group || 'General');
-    setEditColDifficulty(col.difficulty || 'Master');
+    setEditColDifficulty(col.difficulty || 'Standard 1');
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -125,7 +204,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     setNewColName('');
     setNewColDesc('');
     setNewColGroup('General');
-    setNewColDifficulty('Master');
+    setNewColDifficulty('Standard 1');
     setShowCreateModal(false);
   };
 
@@ -150,21 +229,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             {t('libraryDesc')}
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onNavigateTab('import')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] hover:bg-[#EAE5D8] text-[#2D2A26] dark:text-[#EAE7DF] font-semibold text-xs transition-colors border border-[#E8E2D2] dark:border-[#353B35]"
-          >
-            <Download className="w-4 h-4" />
-            <span>{t('importPackage')}</span>
-          </button>
-        </div>
       </div>
 
-      {/* Search & Group Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1 max-w-md">
+      {/* Search & Filters Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#A09886]" />
           <input
             type="text"
@@ -175,7 +244,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedGroupFilter}
             onChange={(e) => setSelectedGroupFilter(e.target.value)}
@@ -185,6 +254,36 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             {allGroups.map((g) => (
               <option key={g} value={g}>
                 {t('groupPrefix')} {g}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedDifficultyFilter}
+            onChange={(e) => setSelectedDifficultyFilter(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-xs font-semibold text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+          >
+            <option value="ALL">
+              {lang === 'zh' ? '所有年级' : lang === 'ms' ? 'Semua Tahun' : 'All Standards'}
+            </option>
+            {availableStandards.map((std) => (
+              <option key={std.key} value={std.localizedName}>
+                {std.localizedName}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedTagFilter}
+            onChange={(e) => setSelectedTagFilter(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-xs font-semibold text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
+          >
+            <option value="ALL">
+              {lang === 'zh' ? '所有标签' : lang === 'ms' ? 'Semua Tag' : 'All Tags'} ({allTags.length})
+            </option>
+            {allTags.map((tag) => (
+              <option key={tag} value={tag}>
+                #{tag}
               </option>
             ))}
           </select>
@@ -200,7 +299,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(groupedCollections).map(([groupName, groupCols]) => (
+          {(Object.entries(groupedCollections) as [string, KnowledgeCollection[]][]).map(([groupName, groupCols]) => (
             <div key={groupName} className="space-y-3">
               {/* Group Header */}
               <div className="flex items-center justify-between border-b border-[#E8E2D2] dark:border-[#353B35] pb-2">
@@ -234,28 +333,36 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                         </span>
                       </div>
 
-                      {/* Group Tag & Difficulty Badges */}
+                      {/* Difficulty & Tags Badges (Group tag removed per user request) */}
                       <div className="flex items-center gap-1.5 flex-wrap my-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20">
-                          <Folder className="w-3 h-3" />
-                          {collection.group || 'General'}
-                        </span>
+                        {(() => {
+                          const isLower = /1|2|一|二/.test(collection.difficulty || '');
+                          const isMid = /3|4|三|四/.test(collection.difficulty || '');
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                isLower
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                  : isMid
+                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                  : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                              }`}
+                            >
+                              {isLower ? '🟢 ' : isMid ? '🟡 ' : '🔵 '}
+                              {collection.difficulty}
+                            </span>
+                          );
+                        })()}
 
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                            collection.difficulty === 'Beginner'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                              : collection.difficulty === 'Intermediate'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                          }`}
-                        >
-                          {collection.difficulty === 'Beginner'
-                            ? (lang === 'zh' ? '🟢 初级' : '🟢 Beginner')
-                            : collection.difficulty === 'Intermediate'
-                            ? (lang === 'zh' ? '🟡 中级' : '🟡 Intermediate')
-                            : (lang === 'zh' ? '🔴 高级' : '🔴 Master')}
-                        </span>
+                        {(collection.tags || []).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20 font-sans"
+                          >
+                            <Tag className="w-2.5 h-2.5" />
+                            {tag}
+                          </span>
+                        ))}
                       </div>
 
                       <p className="text-xs text-[#7C776B] dark:text-[#A09886] line-clamp-2 mb-3">
@@ -273,6 +380,47 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                           </span>
                         ))}
                       </div>
+
+                      {/* Last Quiz Score Display */}
+                      {(() => {
+                        const matchingResults = (appState.quizResults || []).filter(
+                          (r) => r.collectionId === collection.id || r.collectionName === collection.name
+                        );
+                        const lastRes = matchingResults.length > 0
+                          ? [...matchingResults].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+                          : null;
+
+                        if (lastRes) {
+                          const isPass = lastRes.scorePercentage >= (settings.defaultPassMark || 70);
+                          return (
+                            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold mb-3 ${
+                              isPass
+                                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                                : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
+                            }`}>
+                              <span className="text-[#6B6559] dark:text-[#A09886] flex items-center gap-1.5">
+                                <Award className={`w-3.5 h-3.5 ${isPass ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} />
+                                {lang === 'zh' ? '最近得分' : lang === 'ms' ? 'Markah Terakhir' : 'Last Score'}:
+                              </span>
+                              <span className={`font-bold ${isPass ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                                {lastRes.scorePercentage}% ({lastRes.correctCount}/{lastRes.totalQuestions})
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#F5F2EA]/60 dark:bg-[#2D322D]/60 border border-dashed border-[#E8E2D2] dark:border-[#353B35] text-[11px] text-[#A09886] mb-3">
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <Award className="w-3.5 h-3.5 text-[#A09886]" />
+                              {lang === 'zh' ? '最近得分' : lang === 'ms' ? 'Markah Terakhir' : 'Last Score'}:
+                            </span>
+                            <span className="italic font-normal text-[10px]">
+                              {lang === 'zh' ? '暂无练习记录' : lang === 'ms' ? 'Belum ada latihan' : 'No practice taken'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Action Buttons */}
@@ -412,9 +560,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   onChange={(e) => setEditColDifficulty(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
                 >
-                  <option value="Beginner">🟢 {t('beginner')}</option>
-                  <option value="Intermediate">🟡 {t('intermediate')}</option>
-                  <option value="Master">🔴 {t('master')}</option>
+                  {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6'].map((std) => (
+                    <option key={std} value={std}>
+                      {getLocalizedDifficultyName(std, lang)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -511,9 +661,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   onChange={(e) => setNewColDifficulty(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl text-[#2D2A26] dark:text-[#EAE7DF] focus:outline-none focus:ring-2 focus:ring-[#5A6D5B]"
                 >
-                  <option value="Beginner">🟢 {t('beginner')}</option>
-                  <option value="Intermediate">🟡 {t('intermediate')}</option>
-                  <option value="Master">🔴 {t('master')}</option>
+                  {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6'].map((std) => (
+                    <option key={std} value={std}>
+                      {getLocalizedDifficultyName(std, lang)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -564,21 +716,24 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] border border-[#5A6D5B]/20">
                       📁 {selectedCollection.group || 'General'}
                     </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                        selectedCollection.difficulty === 'Beginner'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                          : selectedCollection.difficulty === 'Intermediate'
-                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                          : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                      }`}
-                    >
-                      {selectedCollection.difficulty === 'Beginner'
-                        ? '🟢 Beginner'
-                        : selectedCollection.difficulty === 'Intermediate'
-                        ? '🟡 Intermediate'
-                        : '🔴 Master'}
-                    </span>
+                    {(() => {
+                      const isLower = /1|2|一|二/.test(selectedCollection.difficulty || '');
+                      const isMid = /3|4|三|四/.test(selectedCollection.difficulty || '');
+                      return (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            isLower
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                              : isMid
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                              : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                          }`}
+                        >
+                          {isLower ? '🟢 ' : isMid ? '🟡 ' : '🔵 '}
+                          {selectedCollection.difficulty}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <p className="text-xs text-[#7C776B] dark:text-[#A09886]">
                     {selectedCollection.questions.length} Questions stored locally

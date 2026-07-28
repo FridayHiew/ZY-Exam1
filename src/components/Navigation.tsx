@@ -1,6 +1,6 @@
 // Navigation.tsx
 import React from 'react';
-import { AppSettings } from '../types';
+import { AppSettings, LicenseType } from '../types';
 import { getTranslation } from '../utils/i18n';
 import { 
   Home, 
@@ -21,6 +21,7 @@ interface NavigationProps {
   isAdmin: boolean;
   settings: AppSettings;
   hasValidLicense: boolean;
+  licenseType?: LicenseType;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -29,21 +30,23 @@ export const Navigation: React.FC<NavigationProps> = ({
   isAdmin,
   settings,
   hasValidLicense,
+  licenseType,
 }) => {
   const lang = settings.language;
+  const isUserOrVip = licenseType === 'USER' || licenseType === 'VIP';
 
   // ============================================================
-  // 修改 1: 明確標記哪些項目需要鎖定
+  // 修改 1: 明確標記哪些項目需要鎖定，並對 USER 和 VIP 隱藏 Add Book (import)
   // ============================================================
   const navItems = [
     { id: 'dashboard' as TabType, label: getTranslation(lang, 'dashboard'), icon: Home, isLocked: false },
     { id: 'library' as TabType, label: getTranslation(lang, 'library'), icon: BookOpen, isLocked: false },
-    { 
+    ...(!isUserOrVip ? [{ 
       id: 'import' as TabType, 
       label: getTranslation(lang, 'import'), 
       icon: PlusCircle, 
       isLocked: !hasValidLicense  // Add Book 需要 license
-    },
+    }] : []),
     { id: 'analytics' as TabType, label: getTranslation(lang, 'analytics'), icon: BarChart3, isLocked: false },
     { 
       id: 'backup' as TabType, 

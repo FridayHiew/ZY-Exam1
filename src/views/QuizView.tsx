@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AppStorageState, Question, QuizConfig, QuizResult, UserAnswerRecord } from '../types';
 import { calculateAndUpdateStreak, saveAppState, resolveImagePath } from '../utils/storage';
 import { getTranslation } from '../utils/i18n';
+import { getLocalizedCollection } from '../utils/collectionTranslations';
 import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock, Award, RotateCcw, FileText, Check, AlertCircle, Image as ImageIcon, Grid, HelpCircle } from 'lucide-react';
 import { quizSounds } from '../utils/sound';
 
@@ -88,7 +89,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
   }, [retryCount]);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [currentIndex, isExamCompleted]);
 
   useEffect(() => {

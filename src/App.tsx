@@ -43,6 +43,20 @@ export default function App() {
     });
   }, []);
 
+  // Scroll to top on tab change or quiz launch/exit
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeTab, activeQuizConfig]);
+
+  const handleSelectTab = (tab: TabType) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
   // Apply theme and font size scale to documentElement
   useEffect(() => {
     const root = document.documentElement;
@@ -159,6 +173,7 @@ export default function App() {
   };
 
   const isAdmin = appState.license?.payload.licenseType === 'ADMIN';
+  const isUserOrVip = appState.license?.payload.licenseType === 'USER' || appState.license?.payload.licenseType === 'VIP';
   const hasValidLicense = !!(appState.license && appState.license.isValid);
 
   // Render App UI
@@ -189,10 +204,11 @@ export default function App() {
         <>
           <Navigation
             activeTab={activeTab}
-            onSelectTab={setActiveTab}
+            onSelectTab={handleSelectTab}
             isAdmin={isAdmin}
             settings={appState.settings}
             hasValidLicense={hasValidLicense}
+            licenseType={appState.license?.payload.licenseType}
           />
           <PWAInstallPrompt lang={appState.settings.language} />
         </>
@@ -214,7 +230,7 @@ export default function App() {
               <DashboardView
                 appState={appState}
                 onStartQuiz={handleStartQuiz}
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleSelectTab}
               />
             )}
 
@@ -223,22 +239,22 @@ export default function App() {
                 appState={appState}
                 onUpdateCollections={handleUpdateCollections}
                 onStartQuiz={handleStartQuiz}
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleSelectTab}
               />
             )}
 
-            {activeTab === 'import' && (
+            {activeTab === 'import' && !isUserOrVip && (
               hasValidLicense ? (
                 <ImportView
                   appState={appState}
                   onUpdateCollections={handleUpdateCollections}
-                  onNavigateTab={setActiveTab}
+                  onNavigateTab={handleSelectTab}
                 />
               ) : (
                 <LicenseRequiredPlaceholder
                   lang={appState.settings.language}
                   moduleName={getTranslation(appState.settings.language, 'import')}
-                  onOpenLicense={() => setActiveTab('license')}
+                  onOpenLicense={() => handleSelectTab('license')}
                 />
               )
             )}

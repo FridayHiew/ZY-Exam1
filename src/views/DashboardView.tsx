@@ -4,6 +4,7 @@ import { AppStorageState, QuizConfig } from '../types';
 import { calculateCategoryMetrics, calculateOverallStats } from '../utils/analytics';
 import { getTranslation } from '../utils/i18n';
 import { getRandomQuote } from '../data/motivationalQuotes';
+import { getLocalizedCollections, getLocalizedDifficultyName } from '../utils/collectionTranslations';
 import { Play, Award, Flame, Target, BookOpen, AlertCircle, Sparkles, ShieldAlert, ArrowRight, CheckCircle2, Folder, Layers } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -27,11 +28,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const lang = settings.language;
   const t = (key: any) => getTranslation(lang, key);
 
+  const localizedCollections = useMemo(
+    () => getLocalizedCollections(collections, lang),
+    [collections, lang]
+  );
+
   const motivationalQuote = useMemo(() => getRandomQuote(lang), [lang]);
 
   const groupedCollections = useMemo<Record<string, GroupSummary>>(() => {
     const groups: Record<string, GroupSummary> = {};
-    collections.forEach((col) => {
+    localizedCollections.forEach((col) => {
       const gName = col.group?.trim() || 'General';
       if (!groups[gName]) {
         groups[gName] = { collectionsCount: 0, questionCount: 0, difficulties: new Set() };
@@ -43,7 +49,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       }
     });
     return groups;
-  }, [collections]);
+  }, [localizedCollections]);
 
   const totalQuestionsInCollections = collections.reduce((acc, c) => acc + c.questions.length, 0);
   const overallStats = calculateOverallStats(quizResults);
@@ -238,22 +244,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 flex-wrap mt-2 pt-2 border-t border-[#E8E2D2]/60 dark:border-[#353B35]">
-                  {Array.from(data.difficulties).map((diff) => (
-                    <span
-                      key={diff}
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                        diff === 'Beginner'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                          : diff === 'Intermediate'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                          : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
-                      }`}
-                    >
-                      {lang === 'zh'
-                        ? diff === 'Beginner' ? '初级' : diff === 'Intermediate' ? '中级' : '高级'
-                        : diff}
-                    </span>
-                  ))}
+                  {(() => {
+                    const difficultiesArray = Array.from(data.difficulties);
+                    if (difficultiesArray.length === 0) return null;
+                    const diff = difficultiesArray[0];
+                    const isLower = /1|2|一|二/.test(diff);
+                    const isMid = /3|4|三|四/.test(diff);
+                    return (
+                      <span
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                          isLower
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                            : isMid
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                            : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800'
+                        }`}
+                      >
+                        {getLocalizedDifficultyName(diff, lang)}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

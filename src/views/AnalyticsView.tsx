@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { AppStorageState, QuizConfig } from '../types';
 import { calculateCategoryMetrics, calculateOverallStats } from '../utils/analytics';
 import { getTranslation } from '../utils/i18n';
+import { getLocalizedCollections, getLocalizedDifficultyName } from '../utils/collectionTranslations';
 import { BarChart3, Target, Award, Clock, RotateCcw, AlertTriangle, CheckCircle2, XCircle, Folder, Layers, Shield, Sparkles } from 'lucide-react';
 
 interface AnalyticsViewProps {
@@ -18,14 +19,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const lang = settings.language;
   const t = (key: any) => getTranslation(lang, key);
 
+  const localizedCollections = useMemo(
+    () => getLocalizedCollections(collections, lang),
+    [collections, lang]
+  );
+
   const stats = calculateOverallStats(quizResults);
-  const allQuestions = collections.flatMap((c) => c.questions);
+  const allQuestions = localizedCollections.flatMap((c) => c.questions);
   const categoryMetrics = calculateCategoryMetrics(quizResults, allQuestions);
 
   // Calculate Group Performance
   const groupStats = useMemo(() => {
     const map: Record<string, { groupName: string; totalCols: number; totalQuestions: number; attempts: number; correct: number }> = {};
-    collections.forEach((col) => {
+    localizedCollections.forEach((col) => {
       const gName = col.group?.trim() || 'General';
       if (!map[gName]) {
         map[gName] = { groupName: gName, totalCols: 0, totalQuestions: 0, attempts: 0, correct: 0 };
@@ -35,7 +41,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     });
 
     quizResults.forEach((res) => {
-      const col = collections.find((c) => c.id === res.collectionId);
+      const col = localizedCollections.find((c) => c.id === res.collectionId);
       const gName = col?.group?.trim() || 'General';
       if (map[gName]) {
         map[gName].attempts += res.totalQuestions;
@@ -44,24 +50,36 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     });
 
     return Object.values(map);
-  }, [collections, quizResults]);
+  }, [localizedCollections, quizResults]);
 
-  // Calculate Difficulty Level Breakdown
+  // Calculate Difficulty Level Breakdown (Standard 1 to 6)
   const difficultyStats = useMemo(() => {
     const diffMap: Record<string, { totalQuestions: number; count: number }> = {
-      Beginner: { totalQuestions: 0, count: 0 },
-      Intermediate: { totalQuestions: 0, count: 0 },
-      Master: { totalQuestions: 0, count: 0 },
+      'Standard 1': { totalQuestions: 0, count: 0 },
+      'Standard 2': { totalQuestions: 0, count: 0 },
+      'Standard 3': { totalQuestions: 0, count: 0 },
+      'Standard 4': { totalQuestions: 0, count: 0 },
+      'Standard 5': { totalQuestions: 0, count: 0 },
+      'Standard 6': { totalQuestions: 0, count: 0 },
+    };
+
+    const getBaseStandard = (difficulty: string | undefined): string => {
+      if (!difficulty) return 'Standard 1';
+      const d = difficulty.trim();
+      if (/1|一|Beginner/i.test(d)) return 'Standard 1';
+      if (/2|二/i.test(d)) return 'Standard 2';
+      if (/3|三|Intermediate/i.test(d)) return 'Standard 3';
+      if (/4|四/i.test(d)) return 'Standard 4';
+      if (/5|五/i.test(d)) return 'Standard 5';
+      if (/6|六|Master|Expert/i.test(d)) return 'Standard 6';
+      return 'Standard 1';
     };
 
     collections.forEach((col) => {
-      const diff = col.difficulty || 'Master';
-      if (diffMap[diff]) {
-        diffMap[diff].totalQuestions += col.questions.length;
-        diffMap[diff].count += 1;
-      } else {
-        diffMap['Master'].totalQuestions += col.questions.length;
-        diffMap['Master'].count += 1;
+      const baseStd = getBaseStandard(col.difficulty);
+      if (diffMap[baseStd]) {
+        diffMap[baseStd].totalQuestions += col.questions.length;
+        diffMap[baseStd].count += 1;
       }
     });
 
@@ -180,27 +198,45 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {(['Beginner', 'Intermediate', 'Master'] as const).map((lvl) => {
-            const data = difficultyStats[lvl];
-            const badges = {
-              Beginner: {
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          {(['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6'] as const).map((lvl) => {
+            const data = difficultyStats[lvl] || { totalQuestions: 0, count: 0 };
+            const badges: Record<string, { color: string; icon: string; name: string; desc: string }> = {
+              'Standard 1': {
                 color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
                 icon: '🟢',
-                name: t('beginner'),
-                desc: t('beginnerDesc'),
+                name: getLocalizedDifficultyName('Standard 1', lang),
+                desc: lang === 'zh' ? '拼写与基础识字' : lang === 'ms' ? 'Asas ejaan & kosa kata' : 'Basic spelling and vocabulary',
               },
-              Intermediate: {
+              'Standard 2': {
+                color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300',
+                icon: '🟢',
+                name: getLocalizedDifficultyName('Standard 2', lang),
+                desc: lang === 'zh' ? '简单句型与日常词汇' : lang === 'ms' ? 'Bina ayat mudah & kosa kata' : 'Simple sentence & daily words',
+              },
+              'Standard 3': {
                 color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
                 icon: '🟡',
-                name: t('intermediate'),
-                desc: t('intermediateDesc'),
+                name: getLocalizedDifficultyName('Standard 3', lang),
+                desc: lang === 'zh' ? '基础理解与语法应用' : lang === 'ms' ? 'Pemahaman asas & tatabahasa' : 'Comprehension & basic grammar',
               },
-              Master: {
-                color: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300',
-                icon: '🔴',
-                name: t('master'),
-                desc: t('masterDesc'),
+              'Standard 4': {
+                color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300',
+                icon: '🟡',
+                name: getLocalizedDifficultyName('Standard 4', lang),
+                desc: lang === 'zh' ? '语法进阶与情境表达' : lang === 'ms' ? 'Aplikasi tatabahasa & ungkapan' : 'Grammar usage & expressions',
+              },
+              'Standard 5': {
+                color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
+                icon: '🔵',
+                name: getLocalizedDifficultyName('Standard 5', lang),
+                desc: lang === 'zh' ? '阅读理解与关联词语' : lang === 'ms' ? 'Kefahaman, frasa & peribahasa' : 'Reading, phrases & idioms',
+              },
+              'Standard 6': {
+                color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300',
+                icon: '🔵',
+                name: getLocalizedDifficultyName('Standard 6', lang),
+                desc: lang === 'zh' ? '毕业总复习与深度理解' : lang === 'ms' ? 'Ulang kaji tamat sekolah & KBAT' : 'Final year revision & thinking',
               },
             };
             const badge = badges[lvl];
@@ -208,17 +244,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             return (
               <div
                 key={lvl}
-                className={`p-4 rounded-xl border ${badge.color} text-xs flex flex-col justify-between`}
+                className={`p-3 rounded-xl border ${badge.color} text-[11px] flex flex-col justify-between`}
               >
                 <div>
-                  <div className="flex items-center justify-between font-bold mb-1">
-                    <span className="text-sm font-serif">{badge.icon} {badge.name}</span>
-                    <span className="text-xs">{data.count} {t('collections')}</span>
+                  <div className="flex flex-col font-bold mb-1.5">
+                    <span className="text-xs font-serif leading-tight">{badge.icon} {badge.name}</span>
+                    <span className="text-[9px] opacity-75 mt-0.5">{data.count} {t('collections')}</span>
                   </div>
-                  <p className="text-[11px] opacity-80 mb-2">{badge.desc}</p>
+                  <p className="text-[10px] opacity-90 leading-tight mb-2 min-h-[32px]">{badge.desc}</p>
                 </div>
-                <div className="pt-2 border-t border-current/20 font-semibold text-[11px]">
-                  {lang === 'zh' ? `共 ${data.totalQuestions} 道题目` : `${data.totalQuestions} Questions Total`}
+                <div className="pt-1.5 border-t border-current/20 font-semibold text-[10px]">
+                  {lang === 'zh' ? `共 ${data.totalQuestions} 题` : `${data.totalQuestions} Qs Total`}
                 </div>
               </div>
             );

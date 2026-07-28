@@ -205,7 +205,7 @@ export const TRANSLATIONS = {
     beginnerDesc: 'Basic concepts and definitions',
     intermediateDesc: 'Practical application and workflows',
     masterDesc: 'Expert analysis and case studies',
-    collections: '',
+    collections: 'collections',
     questionsAvailable: 'questions available',
     notAttempted: 'Not Attempted',
     accuracy: 'Accuracy',
@@ -255,9 +255,6 @@ export const TRANSLATIONS = {
     textSizeSmall: '🔍 Small',
     textSizeMedium: '📝 Medium',
     textSizeLarge: '📖 Large',
-    
-    // Common
-    copy: '📋 Copy',
   },
   
   ms: {
@@ -463,7 +460,7 @@ export const TRANSLATIONS = {
     beginnerDesc: 'Konsep asas dan definisi',
     intermediateDesc: 'Aplikasi praktikal dan aliran kerja',
     masterDesc: 'Analisis pakar dan kajian kes',
-    collections: '',
+    collections: 'Buku',
     questionsAvailable: 'soalan tersedia',
     notAttempted: 'Belum Dicuba',
     accuracy: 'Ketepatan',
@@ -513,9 +510,6 @@ export const TRANSLATIONS = {
     textSizeSmall: '🔍 Kecil',
     textSizeMedium: '📝 Sederhana',
     textSizeLarge: '📖 Besar',
-    
-    // Common
-    copy: '📋 Salin',
   },
   
   zh: {
@@ -721,7 +715,7 @@ export const TRANSLATIONS = {
     beginnerDesc: '基础概念与定义',
     intermediateDesc: '实际应用与流程',
     masterDesc: '专家分析与案例研究',
-    collections: '',
+    collections: '书',
     questionsAvailable: '道题目可供练习',
     notAttempted: '暂未测试',
     accuracy: '正确率',
@@ -771,9 +765,6 @@ export const TRANSLATIONS = {
     textSizeSmall: '🔍 小号',
     textSizeMedium: '📝 标准',
     textSizeLarge: '📖 大号',
-    
-    // Common
-    copy: '📋 复制',
   },
 };
 

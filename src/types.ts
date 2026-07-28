@@ -47,6 +47,7 @@ export interface KnowledgeCollection {
   group?: string;
   version: number;
   difficulty?: string;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
   questionCount: number;
@@ -107,7 +108,7 @@ export interface UserProfile {
   createdAt: string;
 }
 
-export type LanguageCode = 'en' | 'zh';
+export type LanguageCode = 'en' | 'zh' | 'ms';
 export type AppTheme = 'light' | 'dark' | 'system';
 export type FontSize = 'small' | 'medium' | 'large';
 
@@ -151,6 +152,8 @@ export interface ValidationReport {
   collectionDescription?: string;
   collectionDifficulty?: string;
   collectionGroup?: string;
+  collectionVersion?: number;
+  collectionTags?: string[];
 }
 
 export interface GeneratedLicenseRecord {

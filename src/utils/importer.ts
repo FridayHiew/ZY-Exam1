@@ -214,8 +214,10 @@ export async function parseJSONImport(fileText: string): Promise<ValidationRepor
 
   const collectionName = parsed.collectionName || parsed.name || 'Imported Collection';
   const collectionDescription = parsed.description || '';
-  const collectionDifficulty = parsed.difficulty || 'Master';
+  const collectionDifficulty = parsed.difficulty || 'Standard 1';
   const collectionGroup = parsed.group || parsed.groupName || 'General';
+  const collectionVersion = typeof parsed.version === 'number' ? parsed.version : 1;
+  const collectionTags = Array.isArray(parsed.tags) ? parsed.tags.map((t: any) => t.toString().trim()) : [];
   let rawQuestions: any[] = [];
 
   if (Array.isArray(parsed)) {
@@ -235,6 +237,8 @@ export async function parseJSONImport(fileText: string): Promise<ValidationRepor
       collectionDescription,
       collectionDifficulty,
       collectionGroup,
+      collectionVersion,
+      collectionTags,
     };
   }
 
@@ -243,6 +247,8 @@ export async function parseJSONImport(fileText: string): Promise<ValidationRepor
   report.collectionDescription = collectionDescription;
   report.collectionDifficulty = collectionDifficulty;
   report.collectionGroup = collectionGroup;
+  report.collectionVersion = collectionVersion;
+  report.collectionTags = collectionTags;
   return report;
 }
 
@@ -345,13 +351,17 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
 
   const collectionName = parsed.collectionName || parsed.name || 'ZIP Imported Collection';
   const collectionDescription = parsed.description || '';
-  const collectionDifficulty = parsed.difficulty || 'Master';
+  const collectionDifficulty = parsed.difficulty || 'Standard 1';
   const collectionGroup = parsed.group || parsed.groupName || 'General';
+  const collectionVersion = typeof parsed.version === 'number' ? parsed.version : 1;
+  const collectionTags = Array.isArray(parsed.tags) ? parsed.tags.map((t: any) => t.toString().trim()) : [];
   const rawQuestions = Array.isArray(parsed) ? parsed : parsed.questions || [];
   const report = validateAndFormatQuestions(rawQuestions, imagesMap);
   report.collectionName = collectionName;
   report.collectionDescription = collectionDescription;
   report.collectionDifficulty = collectionDifficulty;
   report.collectionGroup = collectionGroup;
+  report.collectionVersion = collectionVersion;
+  report.collectionTags = collectionTags;
   return report;
 }
