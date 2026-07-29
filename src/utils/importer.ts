@@ -76,7 +76,11 @@ export function validateAndFormatQuestions(
     const difficulty = (raw.difficulty || 'Expert').toString().trim();
     const knowledgeLevel = (raw.knowledgeLevel || 'Analyze').toString().trim();
     const questionType = (raw.questionType || 'Analysis').toString().trim();
-    const tags = Array.isArray(raw.tags) ? raw.tags.map((t: any) => t.toString().trim()) : [];
+    const tags = Array.isArray(raw.tags)
+      ? raw.tags.map((t: any) => t.toString().trim())
+      : typeof raw.tags === 'string' && raw.tags.trim()
+      ? raw.tags.split(/[,;\s]+/).map((t: any) => t.trim())
+      : [];
     const statements = typeof raw.statements === 'object' && raw.statements !== null ? raw.statements : undefined;
     const sourceReference = (raw.sourceReference || '').toString().trim();
 
@@ -363,5 +367,71 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
   report.collectionGroup = collectionGroup;
   report.collectionVersion = collectionVersion;
   report.collectionTags = collectionTags;
+  return report;
+}
+
+/**
+ * Parse CSV file containing questions row by row
+ */
+export async function parseCSVImport(fileText: string, filename: string): Promise<ValidationReport> {
+  const rows = parseCSV(fileText);
+  if (rows.length < 2) {
+    return {
+      isValid: false,
+      totalRows: 0,
+      validRows: 0,
+      invalidRows: 0,
+      errors: [{ row: 0, field: 'csv', message: 'CSV file is empty or missing data rows' }],
+      warnings: [],
+      extractedQuestions: [],
+      collectionName: filename.replace(/\.[^/.]+$/, ''),
+    };
+  }
+
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const rawQuestions: any[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    // Create an object using headers as keys
+    const questionObj: any = {};
+    headers.forEach((header, index) => {
+      if (index < row.length) {
+        questionObj[header] = row[index];
+      }
+    });
+
+    // Normalize keys to what validateAndFormatQuestions expects
+    const normalizedObj: any = {};
+    Object.entries(questionObj).forEach(([key, val]) => {
+      const normalizedKey = key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      if (normalizedKey === 'id') normalizedObj.id = val;
+      else if (normalizedKey === 'category') normalizedObj.category = val;
+      else if (normalizedKey === 'difficulty') normalizedObj.difficulty = val;
+      else if (normalizedKey === 'knowledgelevel') normalizedObj.knowledgeLevel = val;
+      else if (normalizedKey === 'questiontype') normalizedObj.questionType = val;
+      else if (normalizedKey === 'tags') normalizedObj.tags = val;
+      else if (normalizedKey === 'questiontext' || normalizedKey === 'question') normalizedObj.questionText = val;
+      else if (normalizedKey === 'optiona') normalizedObj.optionA = val;
+      else if (normalizedKey === 'optionb') normalizedObj.optionB = val;
+      else if (normalizedKey === 'optionc') normalizedObj.optionC = val;
+      else if (normalizedKey === 'optiond') normalizedObj.optionD = val;
+      else if (normalizedKey === 'correctanswer' || normalizedKey === 'correct' || normalizedKey === 'correctindex') normalizedObj.correctAnswer = val;
+      else if (normalizedKey === 'explanation') normalizedObj.explanation = val;
+      else if (normalizedKey === 'sourcereference' || normalizedKey === 'source') normalizedObj.sourceReference = val;
+      else if (normalizedKey === 'imagefile' || normalizedKey === 'image') normalizedObj.imageFile = val;
+    });
+
+    rawQuestions.push(normalizedObj);
+  }
+
+  const collectionName = filename.replace(/\.[^/.]+$/, '').trim();
+  const report = validateAndFormatQuestions(rawQuestions);
+  report.collectionName = collectionName;
+  report.collectionDescription = `Imported from CSV file: ${filename}`;
+  report.collectionDifficulty = 'Standard 1';
+  report.collectionGroup = 'General';
+  report.collectionVersion = 1;
+  report.collectionTags = ['csv-import'];
   return report;
 }

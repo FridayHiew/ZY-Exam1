@@ -4,7 +4,7 @@ import { LanguageCode } from '../types';
 export const TRANSLATIONS = {
   en: {
     // App Name & Slogan
-    appName: ' Zhuo Yue',           // 或 '⭐ 智慧學習'、'⭐ 快樂學堂'
+    appName: '卓阅试题',           // 或 '⭐ 智慧學習'、'⭐ 快樂學堂'
     sloganCn: '智慧學習，快樂成長',    // 或 '學海無涯，樂在其中'
     sloganEn: 'Learn smart, grow happy!',
     
@@ -223,9 +223,9 @@ export const TRANSLATIONS = {
     
     // Import
     importTitle: '📥 Add New Book',
-    importDesc: 'Upload a JSON or ZIP file to add fun questions!',
+    importDesc: 'Upload a JSON/CSV or ZIP file to add fun questions!',
     dropFileHere: 'Drop your file here!',
-    supportsJsonZip: 'Supports .json or .zip files',
+    supportsJsonZip: 'Supports .json, .csv or .zip files',
     chooseFile: 'Choose File',
     aiHelper: 'AI Helper',
     aiHelperDesc: 'Ask AI to create questions for you!',
@@ -259,7 +259,7 @@ export const TRANSLATIONS = {
   
   ms: {
     // App Name & Slogan
-    appName: 'Zhuo Yue',
+    appName: '卓阅试题',
     sloganCn: '化繁為易，閣藏萬象',
     sloganEn: 'Belajar dengan bijak, berseronok!',
     
@@ -478,9 +478,9 @@ export const TRANSLATIONS = {
     
     // Import
     importTitle: '📥 Tambah Buku Baru',
-    importDesc: 'Muat naik fail JSON atau ZIP untuk tambah soalan!',
+    importDesc: 'Muat naik fail JSON, CSV atau ZIP untuk tambah soalan!',
     dropFileHere: 'Letakkan fail anda di sini!',
-    supportsJsonZip: 'Menyokong fail .json atau .zip',
+    supportsJsonZip: 'Menyokong fail .json, .csv atau .zip',
     chooseFile: 'Pilih Fail',
     aiHelper: 'Pembantu AI',
     aiHelperDesc: 'Minta AI cipta soalan untuk anda!',
@@ -514,9 +514,9 @@ export const TRANSLATIONS = {
   
   zh: {
     // App Name & Slogan
-    appName: '卓越',
+    appName: '卓阅试题',
     sloganCn: '化繁為易，閣藏萬象',
-    sloganEn: '快乐学习，智慧成长！',
+    //sloganEn: '快乐学习，智慧成长！',
     
     // Navigation
     dashboard: '首页',
@@ -733,9 +733,9 @@ export const TRANSLATIONS = {
     
     // Import
     importTitle: '📥 添加新书本',
-    importDesc: '上传 JSON 或 ZIP 文件，添加有趣的题目！',
+    importDesc: '上传 JSON/CSV 或 ZIP 文件，添加有趣的题目！',
     dropFileHere: '将文件拖放到这里！',
-    supportsJsonZip: '支持 .json 或 .zip 文件',
+    supportsJsonZip: '支持 .json、.csv 或 .zip 文件',
     chooseFile: '选择文件',
     aiHelper: 'AI 小助手',
     aiHelperDesc: '让 AI 帮你出题！',

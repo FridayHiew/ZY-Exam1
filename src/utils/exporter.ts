@@ -126,3 +126,101 @@ export function downloadSampleJSONTemplate() {
   const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
   downloadBlob(blob, 'sample_questions_template.json');
 }
+
+/**
+ * Download sample CSV template matching system schema
+ */
+export function downloadSampleCSVTemplate() {
+  const headers = [
+    'ID',
+    'Category',
+    'Question Text',
+    'Option A',
+    'Option B',
+    'Option C',
+    'Option D',
+    'Correct Answer',
+    'Explanation',
+    'Difficulty',
+    'Knowledge Level',
+    'Question Type',
+    'Tags',
+    'Source Reference',
+    'Image File'
+  ];
+
+  const sampleRow = [
+    'ms-csv-001',
+    'Sains Hayat',
+    'Antara haiwan berikut, yang manakah membiak dengan cara melahirkan anak?',
+    'Ayam',
+    'Kucing',
+    'Ular',
+    'Katak',
+    'B',
+    'Kucing ialah mamalia yang membiak dengan cara melahirkan anak, manakala ayam, ular dan katak bertelur.',
+    'Tahun 3',
+    'Analyze',
+    'Analysis',
+    'sains,haiwan',
+    'Buku Teks Sains Tahun 3',
+    ''
+  ];
+
+  // Helper to format CSV row properly
+  const formatCSVRow = (row: string[]) => {
+    return row.map(val => {
+      const escaped = val.replace(/"/g, '""');
+      if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('\r') || escaped.includes('"')) {
+        return `"${escaped}"`;
+      }
+      return escaped;
+    }).join(',');
+  };
+
+  const csvContent = [formatCSVRow(headers), formatCSVRow(sampleRow)].join('\n');
+  // Use BOM for Excel UTF-8 encoding support
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, 'sample_questions_template.csv');
+}
+
+/**
+ * Download sample ZIP template containing questions.json
+ */
+export async function downloadSampleZIPTemplate() {
+  const zip = new JSZip();
+
+  const template = {
+    collectionName: 'Kosa Kata Bahasa Melayu (KSSR)',
+    version: 1,
+    description: 'Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.',
+    group: 'Malay',
+    difficulty: 'Tahun 2',
+    tags: [
+      'kosa-kata'
+    ],
+    questions: [
+      {
+        id: 'ms-q001',
+        category: 'Sekolah & Rumah',
+        questionText: 'perpustakaan',
+        statements: {},
+        optionA: 'prepustakaan',
+        optionB: 'perpustakan',
+        optionC: 'perpustakaan',
+        optionD: 'perpustakkaan',
+        correctAnswer: 'C',
+        explanation: '图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）',
+        sourceReference: 'Buku Teks BM Tahun 3, Unit 4',
+        imageFile: 'q_ms-q001.png'
+      }
+    ]
+  };
+
+  zip.file('questions.json', JSON.stringify(template, null, 2));
+  zip.folder('images');
+
+  const content = await zip.generateAsync({ type: 'blob' });
+  downloadBlob(content, 'sample_questions_template.zip');
+}
+

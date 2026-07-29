@@ -1,10 +1,10 @@
 // ImportView.tsx
 import React, { useState } from 'react';
 import { AppStorageState, KnowledgeCollection, ValidationReport } from '../types';
-import { parseJSONImport, parseZIPImport } from '../utils/importer';
-import { downloadSampleJSONTemplate } from '../utils/exporter';
+import { parseJSONImport, parseZIPImport, parseCSVImport } from '../utils/importer';
+import { downloadSampleJSONTemplate, downloadSampleCSVTemplate, downloadSampleZIPTemplate } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
-import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip } from 'lucide-react';
+import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, FolderArchive } from 'lucide-react';
 
 interface ImportViewProps {
   appState: AppStorageState;
@@ -32,19 +32,17 @@ export const ImportView: React.FC<ImportViewProps> = ({
 
   const getPromptText = (level: 'beginner' | 'intermediate' | 'master') => {
     if (level === 'beginner') {
-      return `Please generate a foundational primary school (Standard 1-2 / Tahun 1-2 / 一二年级) learning collection in valid JSON format based on the attached document(s) or text provided.
+      return `Please generate a foundational primary school (Standard 1-2 / Tahun 1-2 / 一二年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
+=== OPTION A: JSON FORMAT ===
+Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
 {
   "collectionName": "Kosa Kata Bahasa Melayu (KSSR)",
   "version": 1,
   "description": "Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.",
   "group": "Malay",
   "difficulty": "Tahun 2",
-  "tags": [
-    "kosa-kata"
-  ],
+  "tags": ["kosa-kata"],
   "questions": [
     {
       "id": "ms-q001",
@@ -61,22 +59,24 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
       "imageFile": ""
     }
   ]
-}`;
+}
+
+=== OPTION B: CSV FORMAT ===
+Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
+ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
+"ms-q001","Sekolah & Rumah","perpustakaan","prepustakaan","perpustakan","perpustakaan","perpustakkaan","C","图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）","Tahun 2","Analyze","Analysis","kosa-kata","Buku Teks BM Tahun 3, Unit 4",""`;
     } else if (level === 'intermediate') {
-      return `Please generate a practical primary school (Standard 3-4 / Tahun 3-4 / 三四年级) learning collection in valid JSON format based on the attached document(s) or text provided.
+      return `Please generate a practical primary school (Standard 3-4 / Tahun 3-4 / 三四年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
+=== OPTION A: JSON FORMAT ===
+Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
 {
   "collectionName": "English Vocabulary Practice",
   "version": 1,
   "description": "Vocabulary and spelling exercise aligned with the Year 4 primary school syllabus.",
   "group": "English",
   "difficulty": "Standard 4",
-  "tags": [
-    "vocabulary",
-    "spelling"
-  ],
+  "tags": ["vocabulary", "spelling"],
   "questions": [
     {
       "id": "en-q001",
@@ -93,22 +93,24 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
       "imageFile": ""
     }
   ]
-}`;
+}
+
+=== OPTION B: CSV FORMAT ===
+Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
+ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
+"en-q001","Daily Routine","He always _______ his teeth before going to bed.","brush","brushes","brushing","brushed","B","He is a singular third-person pronoun, so the simple present tense verb 'brushes' is correct. Maksud: Dia sentiasa memberus gigi sebelum tidur.","Standard 4","Analyze","Analysis","vocabulary,spelling","English Textbook Year 4, Unit 2",""`;
     } else {
-      return `Please generate an advanced primary school (Standard 5-6 / Tahun 5-6 / 五六年级) learning collection in valid JSON format based on the attached document(s) or text provided.
+      return `Please generate an advanced primary school (Standard 5-6 / Tahun 5-6 / 五六年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
+=== OPTION A: JSON FORMAT ===
+Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
 {
   "collectionName": "Sains Sekolah Rendah - Cabaran Akhir",
   "version": 1,
   "description": "Latihan pemahaman sains dan proses sains Tahun 6.",
   "group": "Science",
   "difficulty": "Tahun 6",
-  "tags": [
-    "sains",
-    "kssr"
-  ],
+  "tags": ["sains", "kssr"],
   "questions": [
     {
       "id": "sci-q001",
@@ -125,7 +127,12 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
       "imageFile": ""
     }
   ]
-}`;
+}
+
+=== OPTION B: CSV FORMAT ===
+Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
+ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
+"sci-q001","Interaksi antara Hidupan","Antara berikut, yang manakah menunjukkan hubungan simbiosis mutualisme?","Burung herba dengan kerbau","Paku pakis langsuir pada batang pokok","Kutu kepala pada manusia","Cendawan yang tumbuh di batang mati","A","Mutualisme ialah interaksi yang membawa manfaat kepada kedua-dua organisma. Burung herba memakan kutu di badan kerbau (makanan untuk burung, kebersihan untuk kerbau).","Tahun 6","Analyze","Analysis","sains,kssr","Buku Teks Sains Tahun 6, Unit 4",""`;
     }
   };
 
@@ -155,6 +162,9 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
       } else if (filename.endsWith('.zip')) {
         const buffer = await file.arrayBuffer();
         res = await parseZIPImport(buffer);
+      } else if (filename.endsWith('.csv')) {
+        const text = await file.text();
+        res = await parseCSVImport(text, file.name);
       } else {
         alert(t('invalidBackup'));
         setIsProcessing(false);
@@ -257,7 +267,7 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
               <span>{t('chooseFile')}</span>
               <input
                 type="file"
-                accept=".json,.zip"
+                accept=".json,.zip,.csv"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -453,16 +463,30 @@ Strictly output ONLY a single raw JSON object (no markdown formatting, no code b
                 {t('needTemplate')}
               </h4>
               <p className="text-[11px] text-[#7C776B] dark:text-[#A09886]">
-                {lang === 'zh' ? '下载标准预置格式的 JSON 题目模版文件' : 'Download standard pre-formatted question template for JSON'}
+                {lang === 'zh' ? '下载标准预置格式的 JSON、CSV 或 ZIP 题目模版文件' : 'Download standard pre-formatted question template for JSON, CSV or ZIP'}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={downloadSampleJSONTemplate}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#242824] text-[#2D2A26] dark:text-[#EAE7DF] border border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] text-xs font-semibold shadow-sm transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#242824] text-[#2D2A26] dark:text-[#EAE7DF] border border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] text-xs font-semibold shadow-sm transition-colors cursor-pointer"
               >
                 <FileCode className="w-3.5 h-3.5 text-[#5A6D5B]" />
-                <span>{t('downloadTemplate')}</span>
+                <span>JSON</span>
+              </button>
+              <button
+                onClick={downloadSampleCSVTemplate}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#242824] text-[#2D2A26] dark:text-[#EAE7DF] border border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              >
+                <FileCode className="w-3.5 h-3.5 text-emerald-600" />
+                <span>CSV</span>
+              </button>
+              <button
+                onClick={downloadSampleZIPTemplate}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#242824] text-[#2D2A26] dark:text-[#EAE7DF] border border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              >
+                <FolderArchive className="w-3.5 h-3.5 text-amber-600" />
+                <span>ZIP</span>
               </button>
             </div>
           </div>
