@@ -48,107 +48,148 @@ function parseCSV(text: string): string[][] {
 }
 
 /**
- * Validate and format raw question objects according to VR-1, VR-2, VR-4
+ * Validate and format raw question objects according to strict schema rules
  */
 export function validateAndFormatQuestions(
   rawQuestions: any[],
-  imagesMap?: Map<string, string> // relative image path -> data URL
+  imagesMap?: Map<string, string>, // relative image path -> data URL
+  extraDocErrors: { row: number; field: string; message: string }[] = []
 ): ValidationReport {
-  const errors: { row: number; field: string; message: string }[] = [];
+  const errors: { row: number; field: string; message: string }[] = [...extraDocErrors];
   const warnings: string[] = [];
   const extractedQuestions: Question[] = [];
   const seenIds = new Set<string>();
 
+  const ALLOWED_QUESTION_KEYS = new Set([
+    'id',
+    'category',
+    'questionText',
+    'statements',
+    'optionA',
+    'optionB',
+    'optionC',
+    'optionD',
+    'correctAnswer',
+    'explanation',
+    'sourceReference',
+    'imageFile'
+  ]);
+
+  const REQUIRED_QUESTION_KEYS = [
+    'id',
+    'category',
+    'questionText',
+    'statements',
+    'optionA',
+    'optionB',
+    'optionC',
+    'optionD',
+    'correctAnswer',
+    'explanation',
+    'sourceReference',
+    'imageFile'
+  ];
+
   rawQuestions.forEach((raw, idx) => {
     const rowNum = idx + 1;
 
-    // Normalize field names
-    const id = (raw.id || raw.ID || `q_${Date.now()}_${idx}`).toString().trim();
-    const category = (raw.category || raw.Category || 'General').toString().trim();
-    const questionText = (
-      raw.questionText ||
-      raw.question ||
-      raw.Question ||
-      ''
-    ).toString().trim();
+    if (typeof raw !== 'object' || raw === null) {
+      errors.push({ row: rowNum, field: 'row', message: '数据行格式无效 (Invalid object format)' });
+      return;
+    }
 
-    // Additional JSON metadata fields
-    const difficulty = (raw.difficulty || 'Expert').toString().trim();
-    const knowledgeLevel = (raw.knowledgeLevel || 'Analyze').toString().trim();
-    const questionType = (raw.questionType || 'Analysis').toString().trim();
-    const tags = Array.isArray(raw.tags)
-      ? raw.tags.map((t: any) => t.toString().trim())
-      : typeof raw.tags === 'string' && raw.tags.trim()
-      ? raw.tags.split(/[,;\s]+/).map((t: any) => t.trim())
-      : [];
-    const statements = typeof raw.statements === 'object' && raw.statements !== null ? raw.statements : undefined;
+    // Check for extra/unexpected parameters in question object
+    Object.keys(raw).forEach((key) => {
+      if (!ALLOWED_QUESTION_KEYS.has(key)) {
+        errors.push({
+          row: rowNum,
+          field: key,
+          message: `含有未知的多余参数 "${key}" (Contains unexpected extra parameter "${key}")`,
+        });
+      }
+    });
+
+    // Check for missing required parameters
+    REQUIRED_QUESTION_KEYS.forEach((key) => {
+      if (raw[key] === undefined) {
+        errors.push({
+          row: rowNum,
+          field: key,
+          message: `缺少必要参数 "${key}" (Missing parameter "${key}")`,
+        });
+      }
+    });
+
+    if (errors.length > extraDocErrors.length) {
+      return;
+    }
+
+    // Normalize field names
+    const id = (raw.id || '').toString().trim();
+    const category = (raw.category || '').toString().trim();
+    const questionText = (raw.questionText || '').toString().trim();
     const sourceReference = (raw.sourceReference || '').toString().trim();
+    const explanation = (raw.explanation || '').toString().trim();
+    let image = (raw.imageFile || '').toString().trim();
 
     // Parse options
-    let options: [string, string, string, string] | null = null;
-    if (Array.isArray(raw.options) && raw.options.length === 4) {
-      options = [
-        raw.options[0].toString(),
-        raw.options[1].toString(),
-        raw.options[2].toString(),
-        raw.options[3].toString(),
-      ];
-    } else if (
-      raw.optionA !== undefined &&
-      raw.optionB !== undefined &&
-      raw.optionC !== undefined &&
-      raw.optionD !== undefined
-    ) {
-      options = [
-        raw.optionA.toString(),
-        raw.optionB.toString(),
-        raw.optionC.toString(),
-        raw.optionD.toString(),
-      ];
-    }
+    const options: [string, string, string, string] = [
+      (raw.optionA || '').toString(),
+      (raw.optionB || '').toString(),
+      (raw.optionC || '').toString(),
+      (raw.optionD || '').toString(),
+    ];
 
     // Parse correct answer
     let correctIndex = -1;
-    const rawCorrect = (
-      raw.correctAnswer !== undefined ? raw.correctAnswer : raw.correctIndex
-    )
-      ?.toString()
-      .trim()
-      .toUpperCase();
+    const rawCorrect = (raw.correctAnswer || '').toString().trim().toUpperCase();
 
     if (rawCorrect === 'A' || rawCorrect === '0') correctIndex = 0;
     else if (rawCorrect === 'B' || rawCorrect === '1') correctIndex = 1;
     else if (rawCorrect === 'C' || rawCorrect === '2') correctIndex = 2;
     else if (rawCorrect === 'D' || rawCorrect === '3') correctIndex = 3;
 
-    const explanation = (raw.explanation || raw.Explanation || '').toString().trim();
-    let image = (raw.image || raw.imageFile || raw.Image || '').toString().trim();
-
-    // Check VR-1: Required fields
-    if (!questionText) {
-      errors.push({ row: rowNum, field: 'questionText', message: 'Question text is required' });
+    // Parse statements
+    let statements: Record<string, string> | undefined = undefined;
+    if (raw.statements !== undefined) {
+      if (typeof raw.statements === 'object' && raw.statements !== null) {
+        statements = raw.statements;
+      } else if (typeof raw.statements === 'string') {
+        const trimmed = raw.statements.trim();
+        if (trimmed) {
+          try {
+            statements = JSON.parse(trimmed);
+          } catch (e) {
+            statements = {};
+          }
+        } else {
+          statements = {};
+        }
+      }
     }
+
+    // Check VR-1: Required fields non-empty / length checks
     if (questionText.length > 2000) {
-      errors.push({ row: rowNum, field: 'questionText', message: 'Question text exceeds 2000 character limit' });
+      errors.push({ row: rowNum, field: 'questionText', message: '题目内容超出2000字符限制 (Question text exceeds 2000 chars)' });
     }
 
     // Check VR-2: Exactly 4 options and 1 correct answer
-    if (!options || options.some((opt) => opt.trim().length === 0)) {
-      errors.push({ row: rowNum, field: 'options', message: 'Question must have 4 non-empty options (A, B, C, D)' });
+    if (options.some((opt) => opt.trim().length === 0)) {
+      errors.push({ row: rowNum, field: 'options', message: '题目包含空的选项 (Options must not be empty)' });
     } else if (options.some((opt) => opt.length > 500)) {
-      errors.push({ row: rowNum, field: 'options', message: 'Option text exceeds 500 character limit' });
+      errors.push({ row: rowNum, field: 'options', message: '选项内容超出500字符限制 (Option exceeds 500 chars)' });
     }
 
     if (correctIndex < 0 || correctIndex > 3) {
-      errors.push({ row: rowNum, field: 'correctAnswer', message: 'Correct answer must be specified as A, B, C, D or index 0-3' });
+      errors.push({ row: rowNum, field: 'correctAnswer', message: '正确答案格式错误，需为 A, B, C, D (Invalid correctAnswer)' });
     }
 
     // Check VR-3: Duplicate ID check
-    if (seenIds.has(id)) {
+    if (id && seenIds.has(id)) {
       warnings.push(`Row ${rowNum}: Duplicate question ID "${id}" detected. Auto-assigning unique ID.`);
     }
-    const finalId = seenIds.has(id) ? `${id}_${Date.now()}_${idx}` : id;
-    seenIds.add(finalId);
+    const finalId = id ? (seenIds.has(id) ? `${id}_${Date.now()}_${idx}` : id) : `q_${Date.now()}_${idx}`;
+    if (finalId) seenIds.add(finalId);
 
     // VR-4: Process image attachment from imagesMap or direct URL/dataURL
     if (image) {
@@ -162,7 +203,7 @@ export function validateAndFormatQuestions(
       }
     }
 
-    if (options && correctIndex >= 0 && questionText) {
+    if (correctIndex >= 0 && questionText && errors.length === extraDocErrors.length) {
       extractedQuestions.push({
         id: finalId,
         category,
@@ -171,27 +212,23 @@ export function validateAndFormatQuestions(
         correctIndex,
         explanation,
         image: image || undefined,
-        difficulty,
-        knowledgeLevel,
-        questionType,
-        tags,
         statements,
         sourceReference,
       });
     }
   });
 
-  const validRows = extractedQuestions.length;
+  const validRows = errors.length === 0 ? extractedQuestions.length : 0;
   const invalidRows = rawQuestions.length - validRows;
 
   return {
-    isValid: validRows > 0,
+    isValid: errors.length === 0 && invalidRows === 0 && validRows > 0,
     totalRows: rawQuestions.length,
     validRows,
     invalidRows,
     errors,
     warnings,
-    extractedQuestions,
+    extractedQuestions: errors.length === 0 ? extractedQuestions : [],
     collectionName: 'Imported Question Collection',
   };
 }
@@ -209,44 +246,89 @@ export async function parseJSONImport(fileText: string): Promise<ValidationRepor
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'file', message: 'Invalid JSON file syntax' }],
+      errors: [{ row: 0, field: 'file', message: 'JSON 语法格式错误 (Invalid JSON syntax)' }],
       warnings: [],
       extractedQuestions: [],
       collectionName: '',
     };
   }
 
-  const collectionName = parsed.collectionName || parsed.name || 'Imported Collection';
-  const collectionDescription = parsed.description || '';
-  const collectionDifficulty = parsed.difficulty || 'Standard 1';
-  const collectionGroup = parsed.group || parsed.groupName || 'General';
-  const collectionVersion = typeof parsed.version === 'number' ? parsed.version : 1;
-  const collectionTags = Array.isArray(parsed.tags) ? parsed.tags.map((t: any) => t.toString().trim()) : [];
-  let rawQuestions: any[] = [];
+  const ALLOWED_TOP_LEVEL_KEYS = new Set([
+    'collectionName',
+    'version',
+    'description',
+    'group',
+    'difficulty',
+    'tags',
+    'questions'
+  ]);
 
-  if (Array.isArray(parsed)) {
-    rawQuestions = parsed;
-  } else if (Array.isArray(parsed.questions)) {
-    rawQuestions = parsed.questions;
-  } else {
+  const REQUIRED_TOP_LEVEL_KEYS = [
+    'collectionName',
+    'version',
+    'description',
+    'group',
+    'difficulty',
+    'tags',
+    'questions'
+  ];
+
+  const docErrors: { row: number; field: string; message: string }[] = [];
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     return {
       isValid: false,
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'questions', message: 'JSON file must contain an array of questions or a "questions" field' }],
+      errors: [{ row: 0, field: 'file', message: 'JSON 必须为包含顶层元数据参数的对象格式 (JSON must be an object containing top-level metadata)' }],
       warnings: [],
       extractedQuestions: [],
-      collectionName,
-      collectionDescription,
-      collectionDifficulty,
-      collectionGroup,
-      collectionVersion,
-      collectionTags,
+      collectionName: '',
     };
   }
 
-  const report = validateAndFormatQuestions(rawQuestions);
+  // Check for unexpected extra parameters
+  Object.keys(parsed).forEach((key) => {
+    if (!ALLOWED_TOP_LEVEL_KEYS.has(key)) {
+      docErrors.push({
+        row: 0,
+        field: key,
+        message: `文档顶层包含未知的多余参数 "${key}" (Top-level JSON contains unexpected parameter "${key}")`,
+      });
+    }
+  });
+
+  // Check for missing required parameters
+  REQUIRED_TOP_LEVEL_KEYS.forEach((key) => {
+    if (parsed[key] === undefined) {
+      docErrors.push({
+        row: 0,
+        field: key,
+        message: `文档顶层缺少必要参数 "${key}" (Top-level JSON missing required parameter "${key}")`,
+      });
+    }
+  });
+
+  const collectionName = parsed.collectionName || 'Imported Collection';
+  const collectionDescription = parsed.description || '';
+  const collectionDifficulty = parsed.difficulty || 'Tahun 2';
+  const collectionGroup = parsed.group || 'General';
+  const collectionVersion = typeof parsed.version === 'number' ? parsed.version : 1;
+  const collectionTags = Array.isArray(parsed.tags) ? parsed.tags.map((t: any) => t.toString().trim()) : [];
+  let rawQuestions: any[] = [];
+
+  if (Array.isArray(parsed.questions)) {
+    rawQuestions = parsed.questions;
+  } else if (parsed.questions !== undefined) {
+    docErrors.push({
+      row: 0,
+      field: 'questions',
+      message: '"questions" 必须是一个数组 (questions must be an array)',
+    });
+  }
+
+  const report = validateAndFormatQuestions(rawQuestions, undefined, docErrors);
   report.collectionName = collectionName;
   report.collectionDescription = collectionDescription;
   report.collectionDifficulty = collectionDifficulty;
@@ -269,7 +351,7 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'zip', message: 'Corrupted or unreadable ZIP package' }],
+      errors: [{ row: 0, field: 'zip', message: 'ZIP 包损坏或无法读取 (Corrupted or unreadable ZIP package)' }],
       warnings: [],
       extractedQuestions: [],
       collectionName: '',
@@ -284,7 +366,7 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
         totalRows: 0,
         validRows: 0,
         invalidRows: 0,
-        errors: [{ row: 0, field: 'zip', message: 'ZIP package contains invalid file paths (zip-slip attempt)' }],
+        errors: [{ row: 0, field: 'zip', message: 'ZIP 包包含非法文件路径 (ZIP package zip-slip attempt)' }],
         warnings: [],
         extractedQuestions: [],
         collectionName: '',
@@ -315,7 +397,6 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
   let questionsFileEntry = zip.file('questions.json') || zip.file('manifest.json');
 
   if (!questionsFileEntry) {
-    // Search any json file in root
     const jsonFiles = Object.keys(zip.files).filter((f) => f.endsWith('.json'));
     if (jsonFiles.length > 0) {
       questionsFileEntry = zip.file(jsonFiles[0]);
@@ -328,7 +409,7 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'zip', message: 'ZIP package missing questions.json file' }],
+      errors: [{ row: 0, field: 'zip', message: 'ZIP 包缺少 questions.json 文件 (ZIP package missing questions.json)' }],
       warnings: [],
       extractedQuestions: [],
       collectionName: '',
@@ -346,21 +427,87 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'questions.json', message: 'Invalid JSON syntax inside ZIP package' }],
+      errors: [{ row: 0, field: 'questions.json', message: 'ZIP 包内的 questions.json 语法格式错误' }],
       warnings: [],
       extractedQuestions: [],
       collectionName: '',
     };
   }
 
-  const collectionName = parsed.collectionName || parsed.name || 'ZIP Imported Collection';
+  const ALLOWED_TOP_LEVEL_KEYS = new Set([
+    'collectionName',
+    'version',
+    'description',
+    'group',
+    'difficulty',
+    'tags',
+    'questions'
+  ]);
+
+  const REQUIRED_TOP_LEVEL_KEYS = [
+    'collectionName',
+    'version',
+    'description',
+    'group',
+    'difficulty',
+    'tags',
+    'questions'
+  ];
+
+  const docErrors: { row: number; field: string; message: string }[] = [];
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return {
+      isValid: false,
+      totalRows: 0,
+      validRows: 0,
+      invalidRows: 0,
+      errors: [{ row: 0, field: 'questions.json', message: 'ZIP questions.json 必须为包含顶层元数据参数的对象格式' }],
+      warnings: [],
+      extractedQuestions: [],
+      collectionName: '',
+    };
+  }
+
+  Object.keys(parsed).forEach((key) => {
+    if (!ALLOWED_TOP_LEVEL_KEYS.has(key)) {
+      docErrors.push({
+        row: 0,
+        field: key,
+        message: `ZIP questions.json 顶层包含未知的多余参数 "${key}" (Top-level contains unexpected parameter "${key}")`,
+      });
+    }
+  });
+
+  REQUIRED_TOP_LEVEL_KEYS.forEach((key) => {
+    if (parsed[key] === undefined) {
+      docErrors.push({
+        row: 0,
+        field: key,
+        message: `ZIP questions.json 顶层缺少必要参数 "${key}" (Top-level missing required parameter "${key}")`,
+      });
+    }
+  });
+
+  const collectionName = parsed.collectionName || 'ZIP Imported Collection';
   const collectionDescription = parsed.description || '';
-  const collectionDifficulty = parsed.difficulty || 'Standard 1';
-  const collectionGroup = parsed.group || parsed.groupName || 'General';
+  const collectionDifficulty = parsed.difficulty || 'Tahun 2';
+  const collectionGroup = parsed.group || 'General';
   const collectionVersion = typeof parsed.version === 'number' ? parsed.version : 1;
   const collectionTags = Array.isArray(parsed.tags) ? parsed.tags.map((t: any) => t.toString().trim()) : [];
-  const rawQuestions = Array.isArray(parsed) ? parsed : parsed.questions || [];
-  const report = validateAndFormatQuestions(rawQuestions, imagesMap);
+  let rawQuestions: any[] = [];
+
+  if (Array.isArray(parsed.questions)) {
+    rawQuestions = parsed.questions;
+  } else if (parsed.questions !== undefined) {
+    docErrors.push({
+      row: 0,
+      field: 'questions',
+      message: 'ZIP questions.json 内的 "questions" 必须是一个数组 (questions must be an array)',
+    });
+  }
+
+  const report = validateAndFormatQuestions(rawQuestions, imagesMap, docErrors);
   report.collectionName = collectionName;
   report.collectionDescription = collectionDescription;
   report.collectionDifficulty = collectionDifficulty;
@@ -374,25 +521,131 @@ export async function parseZIPImport(fileBuffer: ArrayBuffer): Promise<Validatio
  * Parse CSV file containing questions row by row
  */
 export async function parseCSVImport(fileText: string, filename: string): Promise<ValidationReport> {
-  const rows = parseCSV(fileText);
+  const lines = fileText.split(/\r?\n/);
+  const metadata: Record<string, string> = {};
+  const cleanLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#')) {
+      const match = trimmed.match(/^#\s*([^:]+)\s*:\s*(.*)$/);
+      if (match) {
+        metadata[match[1].trim()] = match[2].trim();
+      }
+    } else {
+      cleanLines.push(line);
+    }
+  }
+
+  // Filter out leading/trailing empty lines
+  let startIndex = 0;
+  while (startIndex < cleanLines.length && cleanLines[startIndex].trim() === '') {
+    startIndex++;
+  }
+  const filteredLines = cleanLines.slice(startIndex);
+
+  const cleanText = filteredLines.join('\n');
+  const rows = parseCSV(cleanText);
+
   if (rows.length < 2) {
     return {
       isValid: false,
       totalRows: 0,
       validRows: 0,
       invalidRows: 0,
-      errors: [{ row: 0, field: 'csv', message: 'CSV file is empty or missing data rows' }],
+      errors: [{ row: 0, field: 'csv', message: 'CSV 文件为空或缺少数据行 (CSV file empty or missing data rows)' }],
       warnings: [],
       extractedQuestions: [],
       collectionName: filename.replace(/\.[^/.]+$/, ''),
     };
   }
 
-  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const headerErrors: { row: number; field: string; message: string }[] = [];
+
+  const REQUIRED_CSV_METADATA_KEYS = [
+    'collectionName',
+    'version',
+    'description',
+    'group',
+    'difficulty',
+    'tags'
+  ];
+
+  // Check for missing metadata comments
+  REQUIRED_CSV_METADATA_KEYS.forEach((key) => {
+    if (metadata[key] === undefined) {
+      headerErrors.push({
+        row: 1,
+        field: `# ${key}`,
+        message: `CSV 缺少必要元数据注释: "# ${key}: <值>" (CSV missing required metadata comment: "# ${key}")`,
+      });
+    }
+  });
+
+  // Check for unexpected extra metadata comments
+  Object.keys(metadata).forEach((key) => {
+    if (!REQUIRED_CSV_METADATA_KEYS.includes(key)) {
+      headerErrors.push({
+        row: 1,
+        field: `# ${key}`,
+        message: `CSV 包含未知的多余元数据参数: "# ${key}" (CSV contains unexpected metadata parameter: "# ${key}")`,
+      });
+    }
+  });
+
+  const EXPECTED_CSV_HEADERS = [
+    'ID',
+    'Category',
+    'QuestionText',
+    'Statements',
+    'OptionA',
+    'OptionB',
+    'OptionC',
+    'OptionD',
+    'CorrectAnswer',
+    'Explanation',
+    'SourceReference',
+    'ImageFile'
+  ];
+
+  const headers = rows[0].map((h) => h.trim());
+
+  // Check for unexpected extra column headers
+  headers.forEach((rawHeader) => {
+    if (!EXPECTED_CSV_HEADERS.includes(rawHeader)) {
+      headerErrors.push({
+        row: lines.findIndex(l => l.includes(rows[0].join(','))) + 1 || 1,
+        field: rawHeader,
+        message: `CSV 表头包含未知的多余列: "${rawHeader}" (CSV header contains unexpected column "${rawHeader}")`,
+      });
+    }
+  });
+
+  // Check for missing required column headers
+  EXPECTED_CSV_HEADERS.forEach((req) => {
+    if (!headers.includes(req)) {
+      headerErrors.push({
+        row: lines.findIndex(l => l.includes(rows[0].join(','))) + 1 || 1,
+        field: req,
+        message: `CSV 表头缺少必要列: "${req}" (CSV header missing required column "${req}")`,
+      });
+    }
+  });
+
+  // Check column counts on data rows
   const rawQuestions: any[] = [];
+  const expectedCols = headers.length;
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
+    if (row.length !== expectedCols) {
+      headerErrors.push({
+        row: lines.findIndex(l => l.includes(row.join(','))) + 1 || i + 1,
+        field: 'columns',
+        message: `第 ${i + 1} 行参数列数量不匹配：预期 ${expectedCols} 个，实际 ${row.length} 个 (Column parameter count mismatch)`,
+      });
+    }
+
     // Create an object using headers as keys
     const questionObj: any = {};
     headers.forEach((header, index) => {
@@ -402,36 +655,38 @@ export async function parseCSVImport(fileText: string, filename: string): Promis
     });
 
     // Normalize keys to what validateAndFormatQuestions expects
-    const normalizedObj: any = {};
-    Object.entries(questionObj).forEach(([key, val]) => {
-      const normalizedKey = key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      if (normalizedKey === 'id') normalizedObj.id = val;
-      else if (normalizedKey === 'category') normalizedObj.category = val;
-      else if (normalizedKey === 'difficulty') normalizedObj.difficulty = val;
-      else if (normalizedKey === 'knowledgelevel') normalizedObj.knowledgeLevel = val;
-      else if (normalizedKey === 'questiontype') normalizedObj.questionType = val;
-      else if (normalizedKey === 'tags') normalizedObj.tags = val;
-      else if (normalizedKey === 'questiontext' || normalizedKey === 'question') normalizedObj.questionText = val;
-      else if (normalizedKey === 'optiona') normalizedObj.optionA = val;
-      else if (normalizedKey === 'optionb') normalizedObj.optionB = val;
-      else if (normalizedKey === 'optionc') normalizedObj.optionC = val;
-      else if (normalizedKey === 'optiond') normalizedObj.optionD = val;
-      else if (normalizedKey === 'correctanswer' || normalizedKey === 'correct' || normalizedKey === 'correctindex') normalizedObj.correctAnswer = val;
-      else if (normalizedKey === 'explanation') normalizedObj.explanation = val;
-      else if (normalizedKey === 'sourcereference' || normalizedKey === 'source') normalizedObj.sourceReference = val;
-      else if (normalizedKey === 'imagefile' || normalizedKey === 'image') normalizedObj.imageFile = val;
-    });
+    const normalizedObj: any = {
+      id: questionObj.ID,
+      category: questionObj.Category,
+      questionText: questionObj.QuestionText,
+      statements: questionObj.Statements,
+      optionA: questionObj.OptionA,
+      optionB: questionObj.OptionB,
+      optionC: questionObj.OptionC,
+      optionD: questionObj.OptionD,
+      correctAnswer: questionObj.CorrectAnswer,
+      explanation: questionObj.Explanation,
+      sourceReference: questionObj.SourceReference,
+      imageFile: questionObj.ImageFile
+    };
 
     rawQuestions.push(normalizedObj);
   }
 
-  const collectionName = filename.replace(/\.[^/.]+$/, '').trim();
-  const report = validateAndFormatQuestions(rawQuestions);
+  const collectionName = metadata.collectionName || filename.replace(/\.[^/.]+$/, '').trim();
+  const collectionDescription = metadata.description || '';
+  const collectionDifficulty = metadata.difficulty || 'Tahun 2';
+  const collectionGroup = metadata.group || 'General';
+  const collectionVersion = metadata.version ? parseInt(metadata.version, 10) : 1;
+  const collectionTags = metadata.tags ? metadata.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
+
+  const report = validateAndFormatQuestions(rawQuestions, undefined, headerErrors);
   report.collectionName = collectionName;
-  report.collectionDescription = `Imported from CSV file: ${filename}`;
-  report.collectionDifficulty = 'Standard 1';
-  report.collectionGroup = 'General';
-  report.collectionVersion = 1;
-  report.collectionTags = ['csv-import'];
+  report.collectionDescription = collectionDescription;
+  report.collectionDifficulty = collectionDifficulty;
+  report.collectionGroup = collectionGroup;
+  report.collectionVersion = collectionVersion;
+  report.collectionTags = collectionTags;
   return report;
 }
+

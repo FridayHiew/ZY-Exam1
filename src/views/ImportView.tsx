@@ -1,10 +1,10 @@
 // ImportView.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AppStorageState, KnowledgeCollection, ValidationReport } from '../types';
 import { parseJSONImport, parseZIPImport, parseCSVImport } from '../utils/importer';
 import { downloadSampleJSONTemplate, downloadSampleCSVTemplate, downloadSampleZIPTemplate } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
-import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, FolderArchive } from 'lucide-react';
+import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, FolderArchive, BookOpen, X } from 'lucide-react';
 
 interface ImportViewProps {
   appState: AppStorageState;
@@ -23,20 +23,22 @@ export const ImportView: React.FC<ImportViewProps> = ({
   const licenseType = appState.license?.payload.licenseType;
   const isUserOrVip = licenseType === 'USER' || licenseType === 'VIP';
 
+  const reportRef = useRef<HTMLDivElement>(null);
+
   const [report, setReport] = useState<ValidationReport | null>(null);
   const [conflictStrategy, setConflictStrategy] = useState<'SKIP' | 'OVERWRITE' | 'IMPORT_NEW'>('IMPORT_NEW');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [successModalData, setSuccessModalData] = useState<{
+    collectionName: string;
+    questionCount: number;
+  } | null>(null);
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState<'beginner' | 'intermediate' | 'master'>('beginner');
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [selectedPromptFormat, setSelectedPromptFormat] = useState<'json' | 'csv'>('json');
+  const [copiedPromptType, setCopiedPromptType] = useState<'json' | 'csv' | null>(null);
 
-  const getPromptText = (level: 'beginner' | 'intermediate' | 'master') => {
-    if (level === 'beginner') {
-      return `Please generate a foundational primary school (Standard 1-2 / Tahun 1-2 / 一二年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
-
-=== OPTION A: JSON FORMAT ===
-Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
-{
+  const getPromptText = (level: 'beginner' | 'intermediate' | 'master', format: 'json' | 'csv') => {
+    const jsonSchema = `{
   "collectionName": "Kosa Kata Bahasa Melayu (KSSR)",
   "version": 1,
   "description": "Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.",
@@ -59,98 +61,79 @@ Strictly output a single raw JSON object (no markdown, no code block markers, no
       "imageFile": ""
     }
   ]
-}
+}`;
 
-=== OPTION B: CSV FORMAT ===
-Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
-ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
-"ms-q001","Sekolah & Rumah","perpustakaan","prepustakaan","perpustakan","perpustakaan","perpustakkaan","C","图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）","Tahun 2","Analyze","Analysis","kosa-kata","Buku Teks BM Tahun 3, Unit 4",""`;
+    const csvSchema = `Use the following format exactly:
+
+# collectionName: Kosa Kata Bahasa Melayu (KSSR)
+# version: 1
+# description: Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.
+# group: Malay
+# difficulty: Tahun 2
+# tags: kosa-kata
+
+ID,Category,QuestionText,Statements,OptionA,OptionB,OptionC,OptionD,CorrectAnswer,Explanation,SourceReference,ImageFile
+ms-q001,Sekolah & Rumah,perpustakaan,"{}",prepustakaan,perpustakan,perpustakaan,perpustakkaan,C,"图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）","Buku Teks BM Tahun 3, Unit 4",""`;
+
+    if (level === 'beginner') {
+      if (format === 'json') {
+        return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on basic principles, definitions, and essential concepts.
+
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+${jsonSchema}`;
+      } else {
+        return `Please generate a foundational, beginner-level learning collection in valid CSV format based on the attached document(s) / text provided. Focus on basic principles, definitions, and essential concepts.
+
+Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+${csvSchema}`;
+      }
     } else if (level === 'intermediate') {
-      return `Please generate a practical primary school (Standard 3-4 / Tahun 3-4 / 三四年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
+      if (format === 'json') {
+        return `Please generate a practical, intermediate-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on procedural application, real-world scenario analysis, and problem-solving.
 
-=== OPTION A: JSON FORMAT ===
-Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
-{
-  "collectionName": "English Vocabulary Practice",
-  "version": 1,
-  "description": "Vocabulary and spelling exercise aligned with the Year 4 primary school syllabus.",
-  "group": "English",
-  "difficulty": "Standard 4",
-  "tags": ["vocabulary", "spelling"],
-  "questions": [
-    {
-      "id": "en-q001",
-      "category": "Daily Routine",
-      "questionText": "He always _______ his teeth before going to bed.",
-      "statements": {},
-      "optionA": "brush",
-      "optionB": "brushes",
-      "optionC": "brushing",
-      "optionD": "brushed",
-      "correctAnswer": "B",
-      "explanation": "He is a singular third-person pronoun, so the simple present tense verb 'brushes' is correct. Maksud: Dia sentiasa memberus gigi sebelum tidur.",
-      "sourceReference": "English Textbook Year 4, Unit 2",
-      "imageFile": ""
-    }
-  ]
-}
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
-=== OPTION B: CSV FORMAT ===
-Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
-ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
-"en-q001","Daily Routine","He always _______ his teeth before going to bed.","brush","brushes","brushing","brushed","B","He is a singular third-person pronoun, so the simple present tense verb 'brushes' is correct. Maksud: Dia sentiasa memberus gigi sebelum tidur.","Standard 4","Analyze","Analysis","vocabulary,spelling","English Textbook Year 4, Unit 2",""`;
+${jsonSchema}`;
+      } else {
+        return `Please generate a practical, intermediate-level learning collection in valid CSV format based on the attached document(s) / text provided. Focus on procedural application, real-world scenario analysis, and problem-solving.
+
+Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+${csvSchema}`;
+      }
     } else {
-      return `Please generate an advanced primary school (Standard 5-6 / Tahun 5-6 / 五六年级) learning collection based on the attached document(s) or text. You can output in either Option A (JSON Format) or Option B (CSV Format):
+      if (format === 'json') {
+        return `Please generate an expert, master-level professional assessment collection in valid JSON format based on the attached document(s) / text provided. Focus on deep troubleshooting, complex case studies, critical evaluation, and expert analysis.
 
-=== OPTION A: JSON FORMAT ===
-Strictly output a single raw JSON object (no markdown, no code block markers, no intro text):
-{
-  "collectionName": "Sains Sekolah Rendah - Cabaran Akhir",
-  "version": 1,
-  "description": "Latihan pemahaman sains dan proses sains Tahun 6.",
-  "group": "Science",
-  "difficulty": "Tahun 6",
-  "tags": ["sains", "kssr"],
-  "questions": [
-    {
-      "id": "sci-q001",
-      "category": "Interaksi antara Hidupan",
-      "questionText": "Antara berikut, yang manakah menunjukkan hubungan simbiosis mutualisme?",
-      "statements": {},
-      "optionA": "Burung herba dengan kerbau",
-      "optionB": "Paku pakis langsuir pada batang pokok",
-      "optionC": "Kutu kepala pada manusia",
-      "optionD": "Cendawan yang tumbuh di batang mati",
-      "correctAnswer": "A",
-      "explanation": "Mutualisme ialah interaksi yang membawa manfaat kepada kedua-dua organisma. Burung herba memakan kutu di badan kerbau (makanan untuk burung, kebersihan untuk kerbau).",
-      "sourceReference": "Buku Teks Sains Tahun 6, Unit 4",
-      "imageFile": ""
-    }
-  ]
-}
+Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
-=== OPTION B: CSV FORMAT ===
-Strictly output a standard CSV format (include headers as first line, wrap entries containing commas or newlines in double quotes):
-ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Knowledge Level,Question Type,Tags,Source Reference,Image File
-"sci-q001","Interaksi antara Hidupan","Antara berikut, yang manakah menunjukkan hubungan simbiosis mutualisme?","Burung herba dengan kerbau","Paku pakis langsuir pada batang pokok","Kutu kepala pada manusia","Cendawan yang tumbuh di batang mati","A","Mutualisme ialah interaksi yang membawa manfaat kepada kedua-dua organisma. Burung herba memakan kutu di badan kerbau (makanan untuk burung, kebersihan untuk kerbau).","Tahun 6","Analyze","Analysis","sains,kssr","Buku Teks Sains Tahun 6, Unit 4",""`;
+${jsonSchema}`;
+      } else {
+        return `Please generate an expert, master-level professional assessment collection in valid CSV format based on the attached document(s) / text provided. Focus on deep troubleshooting, complex case studies, critical evaluation, and expert analysis.
+
+Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+${csvSchema}`;
+      }
     }
   };
 
-  const aiPromptText = getPromptText(selectedDifficultyLevel);
+  const aiPromptText = getPromptText(selectedDifficultyLevel, selectedPromptFormat);
 
-  const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(aiPromptText);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2500);
+  const handleCopyPrompt = (format: 'json' | 'csv') => {
+    const textToCopy = getPromptText(selectedDifficultyLevel, format);
+    navigator.clipboard.writeText(textToCopy);
+    setSelectedPromptFormat(format);
+    setCopiedPromptType(format);
+    setTimeout(() => setCopiedPromptType(null), 2500);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     setIsProcessing(true);
     setReport(null);
-    setImportSuccessMsg(null);
+    setSuccessModalData(null);
 
     try {
       const filename = file.name.toLowerCase();
@@ -172,10 +155,46 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
       }
 
       setReport(res);
+
+      // Smooth scroll to validation report section automatically
+      setTimeout(() => {
+        if (reportRef.current) {
+          reportRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
     } catch (err: any) {
       alert(t('backupError').replace('{error}', err.message));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
     }
   };
 
@@ -186,6 +205,7 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
     const existingIndex = collections.findIndex((c) => c.name.toLowerCase() === colName.toLowerCase());
 
     let updatedCollections = [...collections];
+    let finalNameUsed = colName;
 
     if (existingIndex >= 0 && conflictStrategy === 'SKIP') {
       alert(lang === 'zh' ? `题库集合“${colName}”已存在，根据冲突策略已跳过导入。` : `Collection "${colName}" already exists. Import skipped based on strategy.`);
@@ -203,11 +223,12 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
         questions: report.extractedQuestions,
         categories: Array.from(new Set(report.extractedQuestions.map((q) => q.category))),
       };
+      finalNameUsed = updatedCollections[existingIndex].name;
     } else {
-      const finalName = existingIndex >= 0 ? `${colName} (${new Date().toLocaleTimeString()})` : colName;
+      finalNameUsed = existingIndex >= 0 ? `${colName} (${new Date().toLocaleTimeString()})` : colName;
       const newCollection: KnowledgeCollection = {
         id: `col_${Date.now()}`,
-        name: finalName,
+        name: finalNameUsed,
         description: report.collectionDescription || (lang === 'zh' ? `包含 ${report.extractedQuestions.length} 道题目的导入题库。` : `Imported with ${report.extractedQuestions.length} questions.`),
         group: report.collectionGroup || 'General',
         difficulty: report.collectionDifficulty || 'Standard 1',
@@ -223,11 +244,13 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
     }
 
     onUpdateCollections(updatedCollections);
-    setImportSuccessMsg(
-      t('importSuccess')
-        .replace('{count}', report.extractedQuestions.length)
-        .replace('{name}', colName)
-    );
+
+    // Show elegant Modal Pop-up Box
+    setSuccessModalData({
+      collectionName: finalNameUsed,
+      questionCount: report.extractedQuestions.length,
+    });
+
     setReport(null);
   };
 
@@ -251,7 +274,16 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
       ) : (
         <>
           {/* File Upload Dropzone */}
-          <div className="p-8 bg-white dark:bg-[#242824] border-2 border-dashed border-[#E8E2D2] dark:border-[#353B35] rounded-3xl text-center hover:border-[#5A6D5B] transition-colors">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`p-8 bg-white dark:bg-[#242824] border-2 border-dashed rounded-3xl text-center transition-all ${
+              isDragging
+                ? 'border-[#5A6D5B] bg-[#5A6D5B]/5 scale-[1.01]'
+                : 'border-[#E8E2D2] dark:border-[#353B35] hover:border-[#5A6D5B]'
+            }`}
+          >
             <div className="w-14 h-14 rounded-2xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center mx-auto mb-3">
               <UploadCloud className="w-7 h-7" />
             </div>
@@ -276,7 +308,10 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
 
           {/* Pre-Import Validation & Preview Report */}
           {report && (
-            <div className="p-6 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl space-y-6 shadow-sm">
+            <div
+              ref={reportRef}
+              className="p-6 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl space-y-6 shadow-sm scroll-mt-6"
+            >
               <div className="flex items-center justify-between border-b border-[#E8E2D2] dark:border-[#353B35] pb-4">
                 <div>
                   <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
@@ -377,7 +412,7 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
 
           {/* AI Prompt Template Section */}
           <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E2D2] dark:border-[#353B35] pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center shrink-0">
                   <Sparkles className="w-5 h-5" />
@@ -392,29 +427,53 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
                 </div>
               </div>
 
-              <button
-                onClick={handleCopyPrompt}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shrink-0 ${
-                  copiedPrompt
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-[#5A6D5B] hover:bg-[#485749] text-white shadow-sm'
-                }`}
-              >
-                {copiedPrompt ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>{t('copiedToClipboard')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>{t('copyPrompt')}</span>
-                  </>
-                )}
-              </button>
+              {/* Two buttons to select & copy CSV or JSON prompts */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => handleCopyPrompt('json')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
+                    selectedPromptFormat === 'json'
+                      ? 'bg-[#5A6D5B] text-white border-transparent shadow-sm'
+                      : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
+                  }`}
+                >
+                  {copiedPromptType === 'json' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{lang === 'zh' ? '已复制 JSON 提示词' : 'JSON Prompt Copied'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>{lang === 'zh' ? '复制 JSON 提示词' : 'Copy JSON Prompt'}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleCopyPrompt('csv')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
+                    selectedPromptFormat === 'csv'
+                      ? 'bg-[#5A6D5B] text-white border-transparent shadow-sm'
+                      : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
+                  }`}
+                >
+                  {copiedPromptType === 'csv' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{lang === 'zh' ? '已复制 CSV 提示词' : 'CSV Prompt Copied'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>{lang === 'zh' ? '复制 CSV 提示词' : 'Copy CSV Prompt'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+            <div className="flex items-center gap-2 pb-1">
               <span className="text-xs font-semibold text-[#7C776B] dark:text-[#A09886] mr-1">{lang === 'zh' ? '目标难度:' : 'Target Level:'}</span>
               {(['beginner', 'intermediate', 'master'] as const).map((lvl) => {
                 const isActive = selectedDifficultyLevel === lvl;
@@ -450,8 +509,8 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
               <span>
                 <strong>{lang === 'zh' ? '使用说明：' : 'Instruction:'}</strong>{' '}
                 {lang === 'zh'
-                  ? '复制上方提示词，附带您的学习资料或 PDF 文件发送给 ChatGPT、Gemini 或 Claude 即可生成 standard JSON 题库。'
-                  : 'Copy the prompt above, attach your study files/PDFs, and paste into ChatGPT or Gemini to receive a ready-to-import JSON package.'}
+                  ? `复制上方 ${selectedPromptFormat.toUpperCase()} 提示词，附带您的学习资料或 PDF 文件发送给 ChatGPT、Gemini 或 Claude 即可生成 standard ${selectedPromptFormat.toUpperCase()} 题库数据。`
+                  : `Copy the ${selectedPromptFormat.toUpperCase()} prompt above, attach your study files/PDFs, and paste into ChatGPT or Gemini to receive a ready-to-import ${selectedPromptFormat.toUpperCase()} structure.`}
               </span>
             </div>
           </div>
@@ -491,21 +550,46 @@ ID,Category,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Exp
             </div>
           </div>
 
-          {/* Import Success Message */}
-          {importSuccessMsg && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                  {importSuccessMsg}
-                </p>
+          {/* Import Success Centered Modal Popup */}
+          {successModalData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-6 transform transition-all scale-100">
+                {/* Success Icon */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner border border-emerald-200 dark:border-emerald-800/50">
+                  <CheckCircle2 className="w-9 h-9 sm:w-11 sm:h-11" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
+                    {lang === 'zh' ? '导入成功！' : lang === 'ms' ? 'Berjaya Diimport!' : 'Import Successful!'}
+                  </h3>
+                  <p className="text-xs sm:text-sm font-semibold text-[#5A6D5B] dark:text-[#A3B5A4] bg-[#5A6D5B]/10 dark:bg-[#5A6D5B]/20 p-3.5 rounded-2xl border border-[#5A6D5B]/20 leading-relaxed">
+                    {t('importSuccess')
+                      .replace('{count}', successModalData.questionCount.toString())
+                      .replace('{name}', successModalData.collectionName)}
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setSuccessModalData(null);
+                      onNavigateTab('library');
+                    }}
+                    className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    <span>{t('goToLibrary')}</span>
+                  </button>
+                  <button
+                    onClick={() => setSuccessModalData(null)}
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#F5F2EA] dark:bg-[#2D322D] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35] text-[#7C776B] dark:text-[#A09886] font-bold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer border border-[#E8E2D2] dark:border-[#353B35]"
+                  >
+                    {lang === 'zh' ? '关闭' : lang === 'ms' ? 'Tutup' : 'Close'}
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => onNavigateTab('library')}
-                className="text-xs font-semibold px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
-              >
-                {t('goToLibrary')}
-              </button>
             </div>
           )}
         </>

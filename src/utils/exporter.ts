@@ -124,46 +124,50 @@ export function downloadSampleJSONTemplate() {
   };
 
   const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
-  downloadBlob(blob, 'sample_questions_template.json');
+  downloadBlob(blob, 'zh_exam.json');
 }
 
 /**
  * Download sample CSV template matching system schema
  */
 export function downloadSampleCSVTemplate() {
+  const commentLines = [
+    '# collectionName: Kosa Kata Bahasa Melayu (KSSR)',
+    '# version: 1',
+    '# description: Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.',
+    '# group: Malay',
+    '# difficulty: Tahun 2',
+    '# tags: kosa-kata',
+    ''
+  ];
+
   const headers = [
     'ID',
     'Category',
-    'Question Text',
-    'Option A',
-    'Option B',
-    'Option C',
-    'Option D',
-    'Correct Answer',
+    'QuestionText',
+    'Statements',
+    'OptionA',
+    'OptionB',
+    'OptionC',
+    'OptionD',
+    'CorrectAnswer',
     'Explanation',
-    'Difficulty',
-    'Knowledge Level',
-    'Question Type',
-    'Tags',
-    'Source Reference',
-    'Image File'
+    'SourceReference',
+    'ImageFile'
   ];
 
   const sampleRow = [
-    'ms-csv-001',
-    'Sains Hayat',
-    'Antara haiwan berikut, yang manakah membiak dengan cara melahirkan anak?',
-    'Ayam',
-    'Kucing',
-    'Ular',
-    'Katak',
-    'B',
-    'Kucing ialah mamalia yang membiak dengan cara melahirkan anak, manakala ayam, ular dan katak bertelur.',
-    'Tahun 3',
-    'Analyze',
-    'Analysis',
-    'sains,haiwan',
-    'Buku Teks Sains Tahun 3',
+    'ms-q001',
+    'Sekolah & Rumah',
+    'perpustakaan',
+    '{}',
+    'prepustakaan',
+    'perpustakan',
+    'perpustakaan',
+    'perpustakkaan',
+    'C',
+    '图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）',
+    'Buku Teks BM Tahun 3, Unit 4',
     ''
   ];
 
@@ -178,10 +182,15 @@ export function downloadSampleCSVTemplate() {
     }).join(',');
   };
 
-  const csvContent = [formatCSVRow(headers), formatCSVRow(sampleRow)].join('\n');
+  const csvContent = [
+    ...commentLines,
+    formatCSVRow(headers),
+    formatCSVRow(sampleRow)
+  ].join('\n');
+
   // Use BOM for Excel UTF-8 encoding support
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  downloadBlob(blob, 'sample_questions_template.csv');
+  downloadBlob(blob, 'zh_exam.csv');
 }
 
 /**
@@ -221,6 +230,6 @@ export async function downloadSampleZIPTemplate() {
   zip.folder('images');
 
   const content = await zip.generateAsync({ type: 'blob' });
-  downloadBlob(content, 'sample_questions_template.zip');
+  downloadBlob(content, 'zh_exam.zip');
 }
 
