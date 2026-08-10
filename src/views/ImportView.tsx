@@ -77,43 +77,133 @@ ms-q001,Sekolah & Rumah,perpustakaan,"{}",prepustakaan,perpustakan,perpustakaan,
 
     if (level === 'beginner') {
       if (format === 'json') {
-        return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on basic principles, definitions, and essential concepts.
+        return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided.
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on basic principles, definitions, essential concepts, and fundamental knowledge building. Answers should be clear and direct, reinforcing foundational understanding. Distractors should be plausible to test basic recall and understanding.
+
+
+1. Ensure approximately:
+- 50% standard A-D questions
+- 20% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% basic analysis questions
+
+2. Ensure:
+- Answers reinforce core concepts and key terminology.
+- Incorrect options should be reasonable but clearly incorrect upon reflection.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${jsonSchema}`;
       } else {
-        return `Please generate a foundational, beginner-level learning collection in valid CSV format based on the attached document(s) / text provided. Focus on basic principles, definitions, and essential concepts.
+        return `Please generate a foundational, beginner-level learning collection in valid CSV format based on the attached document(s) / text provided.
 
-Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on basic principles, definitions, essential concepts, and fundamental knowledge building. Answers should be clear and direct, reinforcing foundational understanding. Distractors should be plausible to test basic recall and understanding.
+
+
+1. Ensure approximately:
+- 50% standard A-D questions
+- 20% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% basic analysis questions
+
+2. Ensure:
+- Answers reinforce core concepts and key terminology.
+- Incorrect options should be reasonable but clearly incorrect upon reflection.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${csvSchema}`;
       }
     } else if (level === 'intermediate') {
       if (format === 'json') {
-        return `Please generate a practical, intermediate-level learning collection in valid JSON format based on the attached document(s) / text provided. Focus on procedural application, real-world scenario analysis, and problem-solving.
+        return `Please generate a practical, intermediate-level learning collection in valid JSON format based on the attached document(s) / text provided.
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on procedural application, real-world scenario analysis, conceptual connections, and practical problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than simple memorization.
+
+
+1. Ensure approximately:
+- 35% standard A-D questions
+- 35% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% applied analysis questions
+
+2. Ensure:
+- Answers cannot be found by simple keyword matching alone.
+- Incorrect options should be reasonable and plausible based on common misconceptions.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${jsonSchema}`;
       } else {
-        return `Please generate a practical, intermediate-level learning collection in valid CSV format based on the attached document(s) / text provided. Focus on procedural application, real-world scenario analysis, and problem-solving.
+        return `Please generate a practical, intermediate-level learning collection in valid CSV format based on the attached document(s) / text provided.
 
-Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on procedural application, real-world scenario analysis, conceptual connections, and practical problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than simple memorization.
+
+
+1. Ensure approximately:
+- 35% standard A-D questions
+- 35% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% applied analysis questions
+
+2. Ensure:
+- Answers cannot be found by simple keyword matching alone.
+- Incorrect options should be reasonable and plausible based on common misconceptions.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${csvSchema}`;
       }
     } else {
       if (format === 'json') {
-        return `Please generate an expert, master-level professional assessment collection in valid JSON format based on the attached document(s) / text provided. Focus on deep troubleshooting, complex case studies, critical evaluation, and expert analysis.
+        return `Please generate an expert, master-level professional assessment collection in valid JSON format based on the attached document(s) / text provided.
 
-Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on deep analysis, critical thinking, complex reasoning, scenario evaluation, and expert-level problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than memorization.
+
+
+1. Ensure approximately:
+- 30% standard A-D questions
+- 40% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% advanced analysis questions
+
+2. Ensure:
+- Answers cannot be found by keyword matching alone.
+- Incorrect options should be reasonable but incorrect.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${jsonSchema}`;
       } else {
-        return `Please generate an expert, master-level professional assessment collection in valid CSV format based on the attached document(s) / text provided. Focus on deep troubleshooting, complex case studies, critical evaluation, and expert analysis.
+        return `Please generate an expert, master-level professional assessment collection in valid CSV format based on the attached document(s) / text provided.
 
-Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+Focus on deep analysis, critical thinking, complex reasoning, scenario evaluation, and expert-level problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than memorization.
+
+
+1. Ensure approximately:
+- 30% standard A-D questions
+- 40% multi-statement reasoning questions
+- 20% scenario-based questions
+- 10% advanced analysis questions
+
+2. Ensure:
+- Answers cannot be found by keyword matching alone.
+- Incorrect options should be reasonable but incorrect.
+- Explanations should explain why the correct answer is correct.
+
+
+3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
 ${csvSchema}`;
       }

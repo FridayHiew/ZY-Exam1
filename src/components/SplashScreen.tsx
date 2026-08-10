@@ -68,7 +68,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       <div className="flex flex-col items-center text-center my-auto max-w-md w-full px-4 animate-fade-in">
         {/* 1. Chinese Name */}
         <h1 className="text-3xl sm:text-4xl font-extrabold font-serif tracking-widest text-[#3E4A3E] dark:text-[#F5F2EA] mb-6">
-          卓越
+          卓阅
         </h1>
 
         {/* 2. Animated Bagua Logo Container with Pulsing Glow */}
@@ -110,7 +110,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* Powered By / Copyright Footer */}
         <div className="text-[11px] text-[#7C776B] dark:text-[#A09886] font-sans text-center tracking-wide">
           <span>Powered by </span>
-          <span className="font-semibold text-[#3E4A3E] dark:text-[#F5F2EA]">Previous Hellios</span>
+          <span className="font-semibold text-[#3E4A3E] dark:text-[#F5F2EA]">PROVATO HELIOS TECHNOLOGIES</span>
           <span> © {currentYear}</span>
         </div>
       </div>
