@@ -10,7 +10,6 @@ interface SettingsViewProps {
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onOpenLicenseModal: () => void;
   onResetData: () => void;
-  onNavigateTab: (tab: any) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -18,12 +17,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateSettings,
   onOpenLicenseModal,
   onResetData,
-  onNavigateTab,
 }) => {
   const { settings, license } = appState;
   const lang = settings.language;
   const t = (key: any) => getTranslation(lang, key);
-  const isAdmin = license?.payload.licenseType === 'ADMIN';
 
   const [pinInput, setPinInput] = useState(settings.pinCode || '1234');
   const [storageInfo, setStorageInfo] = useState<{ usageMB: string; quotaMB: string; isIndexedDBSupported: boolean }>({
@@ -235,46 +232,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {lang === 'zh' ? '完全兼容 AI 提示词生成的 JSON 及 ZIP 备份文件。' : 'Fully compatible with AI prompt JSON schema & ZIP backups.'}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Advanced Tools */}
-      <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
-        <h3 className="font-bold text-sm text-[#3E4A3E] dark:text-[#F5F2EA] font-serif border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
-          {lang === 'zh' ? '高级工具' : 'Advanced Tools'}
-        </h3>
-        <div className="space-y-3">
-          <button
-            onClick={() => onNavigateTab('backup')}
-            className="w-full flex items-center justify-between p-3 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl hover:bg-[#EAE5D8] transition-colors"
-          >
-            <div className="flex items-center gap-3 text-[#3E4A3E] dark:text-[#F5F2EA]">
-              <div className="p-2 rounded-lg bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4]">
-                <HardDrive className="w-5 h-5" />
-              </div>
-              <div className="text-left text-xs">
-                <div className="font-bold">{t('backupRestore')}</div>
-                <div className="text-[#7C776B] dark:text-[#A09886] text-[11px]">{lang === 'zh' ? '导入或导出应用程序数据' : 'Import or export application data'}</div>
-              </div>
-            </div>
-          </button>
-          
-          {isAdmin && (
-            <button
-              onClick={() => onNavigateTab('admin')}
-              className="w-full flex items-center justify-between p-3 bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] rounded-xl hover:bg-[#EAE5D8] transition-colors"
-            >
-              <div className="flex items-center gap-3 text-[#3E4A3E] dark:text-[#F5F2EA]">
-                <div className="p-2 rounded-lg bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4]">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div className="text-left text-xs">
-                  <div className="font-bold">{t('adminGenerator')}</div>
-                  <div className="text-[#7C776B] dark:text-[#A09886] text-[11px]">{lang === 'zh' ? '生成许可证代码' : 'Generate license codes'}</div>
-                </div>
-              </div>
-            </button>
-          )}
         </div>
       </div>
 

@@ -43,138 +43,87 @@ const GROUP_NAME_MAP: Record<string, Record<LanguageCode, string>> = {
 const SAMPLE_COLLECTION_TRANSLATIONS: Record<string, Record<LanguageCode, LocalizedCollectionInfo>> = {
   'col-chi-01': {
     zh: {
-      name: '华文基础乐园',
-      description: '一年级到三年级华文基础：汉字笔画、拼音、常用词语和简单造句。',
-      categories: ['汉字笔画', '汉语拼音', '词语搭配', '造句基础'],
+      name: '清明节的传统与习俗',
+      description: '阅读关于清明节由来、扫墓祭祖与吃青团等传统习俗的短文，回答5个相关理解题。',
+      categories: ['阅读理解'],
     },
     ms: {
-      name: 'Taman Asas Bahasa Cina',
-      description: 'Asas Bahasa Cina Tahun 1-3: Strok watak, Pinyin, kosa kata dan bina ayat mudah.',
-      categories: ['Strok Watak', 'Pinyin Cina', 'Padanan Kata', 'Bina Ayat'],
+      name: 'Tradisi & Adat Festival Qingming',
+      description: 'Baca petikan tentang asal usul Festival Qingming dan adat resam, kemudian jawab 5 soalan pemahaman.',
+      categories: ['Pemahaman Bacaan'],
     },
     en: {
-      name: 'Chinese Language Foundation',
-      description: 'Years 1-3 Chinese Foundation: Stroke order, Pinyin, vocabulary, and basic sentences.',
-      categories: ['Stroke Order', 'Pinyin', 'Vocabulary', 'Sentence Building'],
+      name: 'Qingming Festival Traditions',
+      description: 'Read the short passage about Qingming Festival customs and answer 5 comprehension questions.',
+      categories: ['Reading Comprehension'],
     },
   },
   'col-chi-02': {
     zh: {
-      name: '华文阅读与写作',
-      description: '三年级到五年级华文进阶：阅读理解、成语故事、修辞手法和基础写作。',
-      categories: ['阅读理解', '成语故事', '修辞手法', '写作技巧'],
+      name: '小蜜蜂采蜜记',
+      description: '阅读关于勤劳的小蜜蜂在花园里采集花蜜的童话故事短文，回答5个相关理解题。',
+      categories: ['阅读理解'],
     },
     ms: {
-      name: 'Bacaan & Penulisan Bahasa Cina',
-      description: 'Bahasa Cina Lanjutan Tahun 3-5: Pemahaman, cerita simpulan bahasa, dan penulisan.',
-      categories: ['Pemahaman Bacaan', 'Cerita Simpulan Bahasa', 'Gaya Bahasa', 'Kemahiran Menulis'],
+      name: 'Kisah Lebah Cilik Menghisap Madu',
+      description: 'Baca cerita dongeng tentang lebah rajin di taman dan jawab 5 soalan pemahaman.',
+      categories: ['Pemahaman Bacaan'],
     },
     en: {
-      name: 'Chinese Reading & Writing',
-      description: 'Years 3-5 Chinese Advanced: Reading comprehension, idioms, and writing skills.',
-      categories: ['Comprehension', 'Idioms', 'Figures of Speech', 'Writing Skills'],
+      name: 'The Little Honeybee',
+      description: 'Read the story of a hard-working little bee in the garden and answer 5 comprehension questions.',
+      categories: ['Reading Comprehension'],
     },
   },
-  'col-math-01': {
+  'col-sci-01': {
     zh: {
-      name: '数学小达人',
-      description: '一年级到三年级数学基础：加减乘除、认识钱币、读时钟和简单的应用题。',
-      categories: ['加减法', '乘除法', '认识钱币', '认识时间', '应用题'],
+      name: '奇妙的海洋世界',
+      description: '阅读关于海洋覆盖面积、蓝鲸与珊瑚礁生态环境的科学科普短文，回答5个相关问题。',
+      categories: ['阅读理解'],
     },
     ms: {
-      name: 'Pakar Matematik Cilik',
-      description: 'Asas Matematik Tahun 1-3: Tambah, tolak, darab, bahagi, wang, masa dan soalan penyelesaian masalah.',
-      categories: ['Tambah & Tolak', 'Darab & Bahagi', 'Mengenal Wang', 'Mengenal Masa', 'Soalan Penyelesaian'],
+      name: 'Dunia Lautan yang Menakjubkan',
+      description: 'Baca petikan sains tentang lautan, paus biru dan batu karang, kemudian jawab 5 soalan.',
+      categories: ['Pemahaman Bacaan'],
     },
     en: {
-      name: 'Math Master',
-      description: 'Years 1-3 Math Foundation: Addition, subtraction, multiplication, division, money, and time.',
-      categories: ['Addition & Subtraction', 'Multiplication & Division', 'Money', 'Time', 'Word Problems'],
+      name: 'The Wonderful Ocean World',
+      description: 'Read the science passage about oceans, blue whales, and coral reefs, then answer 5 questions.',
+      categories: ['Reading Comprehension'],
     },
   },
-  'col-math-02': {
+  'col-moral-01': {
     zh: {
-      name: '数学探险家',
-      description: '三年级到五年级数学进阶：分数、小数、周长面积、图表和更复杂的应用题。',
-      categories: ['分数与小数', '周长与面积', '统计与图表', '逻辑应用题'],
+      name: '守时的小猴皮皮',
+      description: '阅读关于小猴子遵守时间、勤奋准备并在比赛中取得优异成绩的寓言短文，回答5个理解题。',
+      categories: ['阅读理解'],
     },
     ms: {
-      name: 'Penjelajah Matematik',
-      description: 'Matematik Lanjutan Tahun 3-5: Pecahan, perpuluhan, perimeter, luas, dan graf.',
-      categories: ['Pecahan & Perpuluhan', 'Perimeter & Luas', 'Statistik & Graf', 'Penyelesaian Masalah Logik'],
+      name: 'Monyet Pipi yang Menjaga Masa',
+      description: 'Baca cerita dongeng tentang Monyet Pipi yang menepati masa, kemudian jawab 5 soalan pemahaman.',
+      categories: ['Pemahaman Bacaan'],
     },
     en: {
-      name: 'Math Explorer',
-      description: 'Years 3-5 Math Advanced: Fractions, decimals, perimeter, area, and problem solving.',
-      categories: ['Fractions & Decimals', 'Perimeter & Area', 'Statistics & Charts', 'Logic Problems'],
+      name: 'Pipi the Punctual Monkey',
+      description: 'Read the fable about Pipi the punctual monkey and answer 5 comprehension questions.',
+      categories: ['Reading Comprehension'],
     },
   },
   'col-eng-01': {
     zh: {
-      name: '英语趣味乐园',
-      description: '适合一至三年级的趣味英语：字母表、颜色、动物、基础词汇与简单句子。',
-      categories: ['字母表', '颜色', '动物', '简单句子'],
+      name: 'The Little Seed\'s Journey',
+      description: 'Read the short story about a seed growing into a sunflower, and answer 5 comprehension questions.',
+      categories: ['Reading Comprehension'],
     },
     ms: {
-      name: 'Bahasa Inggeris Seronok',
-      description: 'Bahasa Inggeris mudah Tahun 1-3: Abjad, warna, haiwan, kosa kata dan ayat mudah.',
-      categories: ['Abjad', 'Warna', 'Haiwan', 'Ayat Mudah'],
+      name: 'Perjalanan Biji Benih Cilik',
+      description: 'Baca cerita pendek tentang biji benih tumbuh menjadi bunga matahari, dan jawab 5 soalan pemahaman.',
+      categories: ['Pemahaman Bacaan'],
     },
     en: {
-      name: 'English Fun Zone',
-      description: 'Fun and easy English for Years 1-3: Alphabet, colors, animals, basic vocabulary, and simple sentences.',
-      categories: ['Alphabet', 'Colors', 'Animals', 'Simple Sentences'],
-    },
-  },
-  'col-eng-02': {
-    zh: {
-      name: '英语探险家',
-      description: '适合四至六年级的进阶英语：语法、阅读理解、词汇与写作技巧。',
-      categories: ['语法', '阅读理解', '词汇', '写作技巧'],
-    },
-    ms: {
-      name: 'Penjelajah Bahasa Inggeris',
-      description: 'Bahasa Inggeris Lanjutan Tahun 4-6: Tatabahasa, pemahaman, kosa kata, dan penulisan.',
-      categories: ['Tatabahasa', 'Pemahaman Bacaan', 'Kosa Kata', 'Kemahiran Menulis'],
-    },
-    en: {
-      name: 'English Explorer',
-      description: 'Intermediate English for Years 4-6: Grammar, reading comprehension, vocabulary, and writing skills.',
-      categories: ['Grammar', 'Reading', 'Vocabulary', 'Writing'],
-    },
-  },
-  'col-melayu-01': {
-    zh: {
-      name: '马来文基础乐园',
-      description: '一年级至三年级马来文：字母、基本词汇、拼写和简单句子。',
-      categories: ['字母与拼写', '基本词汇', '动物', '简单句子'],
-    },
-    ms: {
-      name: 'Bahasa Melayu Seronok',
-      description: 'Tahun 1-3: Huruf, perkataan asas, ejaan, dan ayat mudah. Mari belajar Bahasa Melayu dengan gembira!',
-      categories: ['Huruf & Ejaan', 'Perkataan Asas', 'Haiwan', 'Ayat Mudah'],
-    },
-    en: {
-      name: 'Fun Malay Language',
-      description: 'Years 1-3 Malay Language: Letters, basic words, spelling, and simple sentences.',
-      categories: ['Letters & Spelling', 'Basic Words', 'Animals', 'Simple Sentences'],
-    },
-  },
-  'col-melayu-02': {
-    zh: {
-      name: '马来文进阶与语法',
-      description: '四年级至六年级马来文：语法、阅读理解、谚语和作文。',
-      categories: ['语法', '阅读理解', '谚语', '作文'],
-    },
-    ms: {
-      name: 'Bahasa Melayu Maju',
-      description: 'Tahun 4-6: Tatabahasa, pemahaman bacaan, peribahasa, dan karangan. Kuasai Bahasa Melayu dengan yakin!',
-      categories: ['Tatabahasa', 'Pemahaman', 'Peribahasa', 'Karangan'],
-    },
-    en: {
-      name: 'Advanced Malay Language',
-      description: 'Years 4-6 Malay Language: Grammar, reading comprehension, idioms, and essay writing.',
-      categories: ['Grammar', 'Reading Comprehension', 'Idioms', 'Essays'],
+      name: 'The Little Seed\'s Journey',
+      description: 'Read the short story about a seed growing into a sunflower, and answer 5 comprehension questions.',
+      categories: ['Reading Comprehension'],
     },
   },
 };

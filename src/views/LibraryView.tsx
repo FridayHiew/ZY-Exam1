@@ -4,6 +4,7 @@ import { AppStorageState, KnowledgeCollection, QuizConfig } from '../types';
 import { exportCollectionAsJSON, exportCollectionAsZIP } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
 import { resolveImagePath } from '../utils/storage';
+import { stripQuestionNumberPrefix } from '../utils/text';
 import { getLocalizedCollections, getLocalizedDifficultyName } from '../utils/collectionTranslations';
 import { Plus, Play, FileText, Download, Trash2, Edit3, BookOpen, Layers, Check, X, Search, Folder, Tag, Award } from 'lucide-react';
 
@@ -229,14 +230,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             {t('libraryDesc')}
           </p>
         </div>
-        
-        <button
-          onClick={() => onNavigateTab('import')}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#5A6D5B] text-white font-semibold text-xs rounded-xl shadow-sm hover:bg-[#485749] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          {lang === 'zh' ? '添加题库 (Add Book)' : 'Add Book'}
-        </button>
       </div>
 
       {/* Search & Filters Bar */}
@@ -457,8 +450,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                               collectionId: collection.id,
                               collectionName: collection.name,
                               mode: 'EXAM',
-                              questionCount: Math.min(20, collection.questions.length),
-                              timeLimitMinutes: Math.min(20, collection.questions.length),
+                              questionCount: Math.min(10, collection.questions.length),
+                              timeLimitMinutes: Math.min(10, collection.questions.length),
                             })
                           }
                           className="w-full py-2 px-3 rounded-xl bg-[#EAE5D8] dark:bg-[#2D322D] hover:bg-[#D9C5B2] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-[#D9C5B2] dark:border-[#353B35]"
@@ -757,6 +750,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             </div>
 
             <div className="overflow-y-auto space-y-3 py-4 flex-1 pr-1">
+              {/* Short Reading Passage Article */}
+              {(selectedCollection.passage || selectedCollection.questions[0]?.passage) && (
+                <div className="p-4 bg-amber-50/80 dark:bg-[#2D322D] rounded-2xl border border-amber-200/80 dark:border-[#353B35] text-xs leading-relaxed font-serif text-slate-800 dark:text-[#EAE7DF] whitespace-pre-line mb-3 shadow-sm">
+                  <div className="font-bold text-amber-900 dark:text-[#F5F2EA] mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wide border-b border-amber-200/60 dark:border-[#353B35] pb-1.5">
+                    <BookOpen className="w-4 h-4 text-amber-700 dark:text-[#A3B5A4]" />
+                    {lang === 'zh' ? '阅读短文 / 文章' : 'Reading Passage'}
+                  </div>
+                  {selectedCollection.passage || selectedCollection.questions[0]?.passage}
+                </div>
+              )}
+
               {selectedCollection.questions.length === 0 ? (
                 <p className="text-xs text-[#7C776B] text-center py-6">
                   {t('noQuestions')}
@@ -775,8 +779,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     </div>
 
                     <p className="font-semibold text-[#2D2A26] dark:text-[#EAE7DF] mb-2">
-                      {q.questionText}
+                      {stripQuestionNumberPrefix(q.questionText)}
                     </p>
+
+                    {q.statements && q.statements.length > 0 && (
+                      <div className="my-2 p-2.5 rounded-lg bg-white/50 dark:bg-black/20 border border-[#E8E2D2]/50 dark:border-[#353B35]/50 space-y-0.5">
+                        {q.statements.map((stmt, sIdx) => (
+                          <div key={sIdx} className="text-[11px] text-[#4E473C] dark:text-[#D1C9B8]">
+                            {stmt}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {q.image && (
                       <div className="my-3 max-h-64 rounded-2xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-2">

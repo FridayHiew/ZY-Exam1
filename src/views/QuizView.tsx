@@ -4,8 +4,9 @@ import { AppStorageState, Question, QuizConfig, QuizResult, UserAnswerRecord } f
 import { calculateAndUpdateStreak, saveAppState, resolveImagePath } from '../utils/storage';
 import { getTranslation } from '../utils/i18n';
 import { getLocalizedCollection } from '../utils/collectionTranslations';
-import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock, Award, RotateCcw, FileText, Check, AlertCircle, Image as ImageIcon, Grid, HelpCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock, Award, RotateCcw, FileText, Check, AlertCircle, Image as ImageIcon, Grid, HelpCircle, BookOpen } from 'lucide-react';
 import { quizSounds } from '../utils/sound';
+import { stripQuestionNumberPrefix } from '../utils/text';
 
 interface QuizViewProps {
   appState: AppStorageState;
@@ -45,9 +46,18 @@ export const QuizView: React.FC<QuizViewProps> = ({
     if (config.mode === 'PRACTICE' || config.mode === 'EXAM') {
       const col = collections.find((c) => c.id === config.collectionId) || collections[0];
       if (col && col.questions.length > 0) {
-        selectedQuestions = [...col.questions].sort(() => Math.random() - 0.5);
-        if (config.questionCount) {
-          selectedQuestions = selectedQuestions.slice(0, config.questionCount);
+        if (config.mode === 'EXAM') {
+          // EXAM mode is always randomized and capped at a maximum of 10 questions
+          selectedQuestions = [...col.questions]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 10);
+        } else {
+          // PRACTICE mode keeps comprehension questions in original sequence but shuffles others
+          const isComprehension = Boolean(col.passage) || col.categories?.some((cat) => /阅读|Pemahaman|Reading/.test(cat));
+          selectedQuestions = isComprehension ? [...col.questions] : [...col.questions].sort(() => Math.random() - 0.5);
+          if (config.questionCount) {
+            selectedQuestions = selectedQuestions.slice(0, config.questionCount);
+          }
         }
       }
     } else if (config.mode === 'MISTAKE_REVIEW') {
@@ -118,26 +128,26 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const currentQ = questions[currentIndex];
   const shuffledData = shuffledQuestionsMap.get(currentIndex);
 
-  const handleSelectOption = (optionIndex: number) => {
+  const handleSelectOptionForQuestion = (qIdx: number, optionIndex: number) => {
     if (isExamCompleted) return;
 
-    const alreadyAnswered = userAnswers.has(currentIndex);
+    const alreadyAnswered = userAnswers.has(qIdx);
 
     setUserAnswers((prev) => {
       const next = new Map(prev);
-      next.set(currentIndex, optionIndex);
+      next.set(qIdx, optionIndex);
       return next;
     });
 
     if (config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') {
       setShowExplanation((prev) => {
         const next = new Map(prev);
-        next.set(currentIndex, true);
+        next.set(qIdx, true);
         return next;
       });
 
       if (!alreadyAnswered) {
-        const shuff = shuffledQuestionsMap.get(currentIndex);
+        const shuff = shuffledQuestionsMap.get(qIdx);
         if (shuff) {
           const isCorrect = optionIndex === shuff.correctIndex;
           if (isCorrect) {
@@ -148,6 +158,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
         }
       }
     }
+  };
+
+  const handleSelectOption = (optionIndex: number) => {
+    handleSelectOptionForQuestion(currentIndex, optionIndex);
   };
 
   const toggleFlag = (idx: number) => {
@@ -169,7 +183,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
       return {
         questionId: q.id,
-        questionText: q.questionText,
+        questionText: stripQuestionNumberPrefix(q.questionText),
         category: q.category || 'General',
         selectedOptionIndex: selected,
         correctOptionIndex: shuff ? shuff.correctIndex : q.correctIndex,
@@ -345,7 +359,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-bold text-slate-900 dark:text-slate-100">
-                    Q{idx + 1}. {ans.questionText}
+                    Q{idx + 1}. {stripQuestionNumberPrefix(ans.questionText)}
                   </span>
                   {ans.isCorrect ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -353,6 +367,16 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
                   )}
                 </div>
+
+                {matchedQ?.statements && matchedQ.statements.length > 0 && (
+                  <div className="my-2 p-2.5 rounded-lg bg-white/70 dark:bg-black/20 border border-slate-200/40 dark:border-slate-800/40 space-y-0.5">
+                    {matchedQ.statements.map((stmt, sIdx) => (
+                      <div key={sIdx} className="text-[11px] text-[#4E473C] dark:text-[#D1C9B8]">
+                        {stmt}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {matchedQ?.image && (
                   <div className="my-2 max-h-48 rounded-xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-1.5 w-fit max-w-full">
@@ -400,6 +424,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
     ? (config.mode === 'PRACTICE' ? 'MOD LATIHAN' : config.mode === 'EXAM' ? 'MOD PEPERIKSAAN' : config.mode === 'MISTAKE_REVIEW' ? 'MOD SEMAKAN KESILAPAN' : 'LATIHAN TOPIK LEMAH')
     : `${config.mode} MODE`;
 
+  const activeCol = collections.find((c) => c.id === config.collectionId);
+  const activePassage = activeCol?.passage || questions.find((q) => q.passage)?.passage;
+
   return (
     <div className="space-y-6 pb-12 max-w-3xl mx-auto">
       {/* Top Session Progress Bar & Controls */}
@@ -410,10 +437,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
           </span>
           <div className="text-xs font-extrabold text-[#2D2A26] dark:text-[#EAE7DF]">
             {lang === 'zh'
-              ? `第 ${currentIndex + 1} 题，共 ${questions.length} 题`
+              ? `共 ${questions.length} 道理解题 (单页查看模式)`
               : lang === 'ms'
-              ? `Soalan ${currentIndex + 1} daripada ${questions.length}`
-              : `Question ${currentIndex + 1} of ${questions.length}`}
+              ? `${questions.length} Soalan Pemahaman (Satu Halaman)`
+              : `${questions.length} Comprehension Questions (Single Page)`}
           </div>
         </div>
 
@@ -449,146 +476,152 @@ export const QuizView: React.FC<QuizViewProps> = ({
         </div>
       </div>
 
-      {/* Progress Line */}
-      <div className="w-full bg-[#EAE5D8] dark:bg-[#383E38] h-1.5 rounded-full overflow-hidden">
-        <div
-          className="bg-[#5A6D5B] h-full transition-all duration-300"
-          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-        />
-      </div>
-
-      {/* Main Question Display Card */}
-      <div className="p-6 bg-white dark:bg-[#242824] rounded-3xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-6">
-        <div className="flex items-center justify-between text-xs text-[#7C776B] dark:text-[#A09886]">
-          <span className="font-semibold text-[#6B6559] dark:text-[#A09886]">
-            {lang === 'zh' ? '知识点: ' : lang === 'ms' ? 'Topik: ' : 'Topic: '}{currentQ.category || (lang === 'zh' ? '常规' : 'General')}
-          </span>
-          {config.mode === 'EXAM' && (
-            <button
-              onClick={() => toggleFlag(currentIndex)}
-              className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
-                flaggedQuestions.has(currentIndex)
-                  ? 'bg-[#D9C5B2] text-[#2D2A26] border-[#B8C0B0]'
-                  : 'bg-[#F5F2EA] text-[#6B6559] border-[#E8E2D2] dark:bg-[#2D322D] dark:text-[#A09886] dark:border-[#353B35]'
-              }`}
-            >
-              {lang === 'zh'
-                ? (flaggedQuestions.has(currentIndex) ? '★ 已标记' : '☆ 标记待复查')
-                : lang === 'ms'
-                ? (flaggedQuestions.has(currentIndex) ? '★ Ditandakan' : '☆ Tanda untuk Semakan')
-                : (flaggedQuestions.has(currentIndex) ? '★ Flagged' : '☆ Flag for Review')}
-            </button>
-          )}
-        </div>
-
-        {/* Question Text */}
-        <h3 className="text-base font-bold text-[#3E4A3E] dark:text-[#F5F2EA] leading-relaxed font-serif">
-          {currentQ.questionText}
-        </h3>
-
-        {currentQ.image && (
-          <div className="my-3 max-h-64 rounded-2xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-2">
-            <img
-              src={resolveImagePath(currentQ.image)}
-              alt="Question supporting diagram"
-              className="max-h-60 object-contain rounded-xl"
-            />
+      {/* Reading Passage Card at the Top */}
+      {activePassage && (
+        <div className="p-6 bg-amber-50/80 dark:bg-[#2D322D] rounded-3xl border border-amber-200/80 dark:border-[#353B35] shadow-sm space-y-3">
+          <div className="flex items-center gap-2 text-amber-900 dark:text-[#F5F2EA] font-serif font-bold text-sm border-b border-amber-200/60 dark:border-[#353B35] pb-2.5">
+            <BookOpen className="w-5 h-5 text-amber-700 dark:text-[#A3B5A4]" />
+            <span>{activeCol?.name || config.collectionName || (lang === 'zh' ? '阅读短文' : 'Reading Passage')}</span>
           </div>
-        )}
-
-        {/* 4 Selectable Answer Options A-D */}
-        <div className="space-y-2.5 pt-2">
-          {shuffledData?.options.map((optText, oIdx) => {
-            const isSelected = userAnswers.get(currentIndex) === oIdx;
-            const isCorrectOption = oIdx === shuffledData.correctIndex;
-            const isRevealed =
-              (config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
-              showExplanation.get(currentIndex);
-
-            let optionStyle =
-                'bg-[#F5F2EA] dark:bg-[#2D322D] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] hover:bg-[#EAE5D8]';
-
-            if (isSelected) {
-              optionStyle =
-                'bg-[#EAE5D8] dark:bg-[#383E38] border-[#5A6D5B] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold shadow-sm';
-            }
-
-            if (isRevealed) {
-              if (isCorrectOption) {
-                optionStyle =
-                'bg-blue-100 dark:bg-blue-900/40 border-blue-400 dark:border-blue-500 text-blue-800 dark:text-blue-200 font-bold shadow-md ring-2 ring-blue-300 dark:ring-blue-500';
-              } else if (isSelected && !isCorrectOption) {
-                optionStyle =
-                'bg-rose-100/80 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold';
-              }
-            }
-
-            return (
-              <button
-                key={oIdx}
-                onClick={() => handleSelectOption(oIdx)}
-                className={`w-full p-3.5 rounded-2xl border text-left text-xs transition-all flex items-start gap-3 ${optionStyle}`}
-              >
-                <span className="w-6 h-6 rounded-lg bg-white/80 dark:bg-[#1C1E1C]/80 font-bold flex items-center justify-center text-xs shrink-0 border border-current opacity-80">
-                  {String.fromCharCode(65 + oIdx)}
-                </span>
-                <span className="mt-0.5 font-medium leading-normal">{optText}</span>
-              </button>
-            );
-          })}
+          <div className="text-sm text-slate-800 dark:text-[#EAE7DF] leading-relaxed font-serif whitespace-pre-line tracking-wide">
+            {activePassage}
+          </div>
         </div>
+      )}
 
-        {/* Explanation Reveal in Practice Mode */}
-        {(config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
-          showExplanation.get(currentIndex) && (
-            <div className="p-4 rounded-2xl bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] text-xs space-y-1">
-              <span className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA] block flex items-center gap-1.5 font-serif">
-                <HelpCircle className="w-4 h-4 text-[#5A6D5B]" />
-                {t('questionExplanation')}:
-              </span>
-              <p className="text-[#2D2A26] dark:text-[#EAE7DF] leading-relaxed">
-                {currentQ.explanation || (lang === 'zh' ? '该题未提供具体解析。' : lang === 'ms' ? 'Tiada penerangan diberikan untuk soalan ini.' : 'No explicit explanation provided for this question.')}
-              </p>
-              {currentQ.sourceReference && (
-                <div className="mt-2 pt-2 border-t border-[#EAE5D8] dark:border-[#353B35] text-[11px] text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center gap-1">
-                  <span className="font-bold">
-                    {lang === 'zh' ? '参考来源: ' : lang === 'ms' ? 'Rujukan Sumber: ' : 'Source Reference: '}
-                  </span>
-                  <span>{currentQ.sourceReference}</span>
+      {/* All Questions Stacked Below the Article on the Same Page */}
+      <div className="space-y-6">
+        {questions.map((qItem, qIdx) => {
+          const shuff = shuffledQuestionsMap.get(qIdx);
+          const selectedOpt = userAnswers.get(qIdx);
+          const isFlagged = flaggedQuestions.has(qIdx);
+
+          return (
+            <div key={qItem.id || qIdx} className="p-6 bg-white dark:bg-[#242824] rounded-3xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-5">
+              <div className="flex items-center justify-between text-xs text-[#7C776B] dark:text-[#A09886]">
+                <span className="font-bold text-[#5A6D5B] dark:text-[#A3B5A4] px-3 py-1 rounded-lg bg-[#F5F2EA] dark:bg-[#2D322D]">
+                  {lang === 'zh' ? `第 ${qIdx + 1} 题` : `Question ${qIdx + 1}`}
+                </span>
+                {config.mode === 'EXAM' && (
+                  <button
+                    onClick={() => toggleFlag(qIdx)}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                      isFlagged
+                        ? 'bg-[#D9C5B2] text-[#2D2A26] border-[#B8C0B0]'
+                        : 'bg-[#F5F2EA] text-[#6B6559] border-[#E8E2D2] dark:bg-[#2D322D] dark:text-[#A09886] dark:border-[#353B35]'
+                    }`}
+                  >
+                    {isFlagged ? '★ 已标记' : '☆ 标记待复查'}
+                  </button>
+                )}
+              </div>
+
+              <h3 className="text-base font-bold text-[#3E4A3E] dark:text-[#F5F2EA] leading-relaxed font-serif">
+                {stripQuestionNumberPrefix(qItem.questionText)}
+              </h3>
+
+              {qItem.statements && qItem.statements.length > 0 && (
+                <div className="my-2.5 p-3 rounded-lg bg-[#FDFBF7] dark:bg-[#252825] border border-[#ECE7DB] dark:border-[#3A403A] space-y-1">
+                  {qItem.statements.map((stmt, sIdx) => (
+                    <div key={sIdx} className="text-sm text-[#4E473C] dark:text-[#D1C9B8]">
+                      {stmt}
+                    </div>
+                  ))}
                 </div>
               )}
+
+              {qItem.image && (
+                <div className="my-3 max-h-64 rounded-2xl overflow-hidden border border-[#E8E2D2] dark:border-[#353B35] bg-[#F5F2EA] dark:bg-[#2D322D] flex items-center justify-center p-2">
+                  <img
+                    src={resolveImagePath(qItem.image)}
+                    alt="Question supporting diagram"
+                    className="max-h-60 object-contain rounded-xl"
+                  />
+                </div>
+              )}
+
+              {/* 4 Selectable Answer Options A-D */}
+              <div className="space-y-2.5 pt-1">
+                {shuff?.options.map((optText, oIdx) => {
+                  const isOptSelected = selectedOpt === oIdx;
+                  const isCorrectOption = oIdx === shuff.correctIndex;
+                  const isRevealed =
+                    (config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
+                    showExplanation.get(qIdx);
+
+                  let optionStyle =
+                    'bg-[#F5F2EA] dark:bg-[#2D322D] border-[#E8E2D2] dark:border-[#353B35] text-[#2D2A26] dark:text-[#EAE7DF] hover:bg-[#EAE5D8]';
+
+                  if (isOptSelected) {
+                    optionStyle =
+                      'bg-[#EAE5D8] dark:bg-[#383E38] border-[#5A6D5B] text-[#3E4A3E] dark:text-[#F5F2EA] font-bold shadow-sm';
+                  }
+
+                  if (isRevealed) {
+                    if (isCorrectOption) {
+                      optionStyle =
+                        'bg-blue-100 dark:bg-blue-900/40 border-blue-400 dark:border-blue-500 text-blue-800 dark:text-blue-200 font-bold shadow-md ring-2 ring-blue-300 dark:ring-blue-500';
+                    } else if (isOptSelected && !isCorrectOption) {
+                      optionStyle =
+                        'bg-rose-100/80 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold';
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={oIdx}
+                      onClick={() => handleSelectOptionForQuestion(qIdx, oIdx)}
+                      className={`w-full p-3.5 rounded-2xl border text-left text-xs transition-all flex items-start gap-3 ${optionStyle}`}
+                    >
+                      <span className="w-6 h-6 rounded-lg bg-white/80 dark:bg-[#1C1E1C]/80 font-bold flex items-center justify-center text-xs shrink-0 border border-current opacity-80">
+                        {String.fromCharCode(65 + oIdx)}
+                      </span>
+                      <span className="mt-0.5 font-medium leading-normal">{optText}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Explanation Reveal in Practice Mode */}
+              {(config.mode === 'PRACTICE' || config.mode === 'MISTAKE_REVIEW') &&
+                showExplanation.get(qIdx) && (
+                  <div className="p-4 rounded-2xl bg-[#F5F2EA] dark:bg-[#2D322D] border border-[#E8E2D2] dark:border-[#353B35] text-xs space-y-1">
+                    <span className="font-bold text-[#3E4A3E] dark:text-[#F5F2EA] block flex items-center gap-1.5 font-serif">
+                      <HelpCircle className="w-4 h-4 text-[#5A6D5B]" />
+                      {t('questionExplanation')}:
+                    </span>
+                    <p className="text-[#2D2A26] dark:text-[#EAE7DF] leading-relaxed">
+                      {qItem.explanation || (lang === 'zh' ? '该题未提供具体解析。' : 'No explicit explanation provided.')}
+                    </p>
+                    {qItem.sourceReference && (
+                      <div className="mt-2 pt-2 border-t border-[#EAE5D8] dark:border-[#353B35] text-[11px] text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center gap-1">
+                        <span className="font-bold">
+                          {lang === 'zh' ? '参考来源: ' : 'Source Reference: '}
+                        </span>
+                        <span>{qItem.sourceReference}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
-          )}
+          );
+        })}
+      </div>
 
-        {/* Navigation Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-[#E8E2D2] dark:border-[#353B35]">
-          <button
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex((prev) => prev - 1)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F5F2EA] dark:bg-[#2D322D] text-[#2D2A26] dark:text-[#EAE7DF] font-semibold text-xs disabled:opacity-40 border border-[#E8E2D2] dark:border-[#353B35]"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t('previousQuestion')}</span>
-          </button>
-
-          {currentIndex < questions.length - 1 ? (
-            <button
-              onClick={() => setCurrentIndex((prev) => prev + 1)}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-semibold text-xs transition-all shadow-sm"
-            >
-              <span>{t('nextQuestion')}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleFinalSubmit}
-              className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#3E4A3E] hover:bg-[#2E372E] text-white font-bold text-xs transition-all shadow-sm"
-            >
-              <span>{t('submitExam')}</span>
-              <Check className="w-4 h-4" />
-            </button>
-          )}
+      {/* Bottom Submit Action */}
+      <div className="p-5 bg-white dark:bg-[#242824] rounded-3xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm flex items-center justify-between">
+        <div className="text-xs text-[#7C776B] dark:text-[#A09886] font-bold">
+          {lang === 'zh'
+            ? `已回答 ${userAnswers.size} / ${questions.length} 题`
+            : `Answered ${userAnswers.size} / ${questions.length} Questions`}
         </div>
+        <button
+          onClick={handleFinalSubmit}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#3E4A3E] hover:bg-[#2E372E] text-white font-bold text-xs transition-all shadow-md"
+        >
+          <Check className="w-4 h-4" />
+          <span>{lang === 'zh' ? '提交整页答卷' : 'Submit All Answers'}</span>
+        </button>
       </div>
 
       {/* Grid Navigator Modal for Exam Mode */}

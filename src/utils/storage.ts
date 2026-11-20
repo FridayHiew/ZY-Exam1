@@ -3,7 +3,7 @@ import { SAMPLE_COLLECTIONS } from '../data/sampleCollections';
 import { buildLicenseData, generateLicenseKey, getOrCreateDeviceId, HARDCODED_MASTER_KEYS } from './crypto';
 import { loadStateFromIndexedDB, saveStateToIndexedDB, clearIndexedDB } from './indexedDB';
 
-const STORAGE_KEY = 'yiga_app_zy_v1';  // 原來是 'oktp_app_state_v1'
+const STORAGE_KEY = 'yiga_app_zy_comprehension_v1';  // 原來是 'oktp_app_state_v1'
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh',
@@ -48,12 +48,7 @@ export function loadAppState(): AppStorageState {
   // Default initial license: None by default. User must activate to unlock premium modules.
   let activeLicense: LicenseData | null = null;
   if (state.license?.key) {
-    activeLicense = buildLicenseData(
-      state.license.key,
-      deviceId,
-      newWatermark,
-      state.license.activatedAt
-    );
+    activeLicense = buildLicenseData(state.license.key, deviceId, newWatermark);
   }
 
   const collections: KnowledgeCollection[] = Array.isArray(state.collections)
@@ -83,24 +78,16 @@ export async function loadAppStateAsync(): Promise<AppStorageState> {
   const idbState = await loadStateFromIndexedDB();
   if (idbState && Array.isArray(idbState.collections)) {
     const deviceId = getOrCreateDeviceId();
-    const nowMs = Date.now();
-    const newWatermark = Math.max(idbState.clockWatermark || 0, nowMs);
-
-    let revalidatedLicense: LicenseData | null = null;
-    if (idbState.license?.key) {
-      revalidatedLicense = buildLicenseData(
-        idbState.license.key,
-        deviceId,
-        newWatermark,
-        idbState.license.activatedAt
-      );
-    }
+    const newWatermark = Math.max(idbState.clockWatermark || 0, Date.now());
+    const activeLicense = idbState.license?.key
+      ? buildLicenseData(idbState.license.key, deviceId, newWatermark)
+      : null;
 
     const hydratedState: AppStorageState = {
       ...idbState,
       deviceId,
       clockWatermark: newWatermark,
-      license: revalidatedLicense,
+      license: activeLicense,
     };
 
     // Save to localStorage as synced cache

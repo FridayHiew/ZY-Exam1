@@ -1,9 +1,9 @@
 {
-  "id": "./",
+  "id": "./?app=zy_comprehension",
   "scope": "./",
   "start_url": "./?source=pwa",
-  "name": "卓越试题",
-  "short_name": "卓越试题",
+  "name": "卓阅理解",
+  "short_name": "卓阅理解",
   "description": "化繁为易，阁藏万象 — Yield insight, gather the infinite. Offline Knowledge Training & Quiz Portal",
   "display": "standalone",
   "background_color": "#FDFCF8",
@@ -12,13 +12,13 @@
   "categories": ["education", "productivity", "utilities"],
   "icons": [
     {
-      "src": "logo.png",
+      "src": "logo-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "logo.png",
+      "src": "logo-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -30,14 +30,14 @@
       "short_name": "Library",
       "description": "Browse question collections and flashcards",
       "url": "./?tab=library",
-      "icons": [{ "src": "logo.png", "sizes": "192x192 512x512", "type": "image/png" }]
+      "icons": [{ "src": "logo-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Analytics",
       "short_name": "Analytics",
       "description": "View progress & quiz reports",
       "url": "./?tab=analytics",
-      "icons": [{ "src": "logo.png", "sizes": "192x192 512x512", "type": "image/png" }]
+      "icons": [{ "src": "logo-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

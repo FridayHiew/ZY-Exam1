@@ -82,36 +82,13 @@ export function generateLicenseKey(
 }
 
 /**
- * Hardcoded Master & Promotional Keys for Admin & User activation
+ * Hardcoded Master Keys for Admin & User activation
  */
 export const HARDCODED_MASTER_KEYS = {
   ADMIN: 'YIGA-ZYADMIN-MASTER-2026-KEY',
   USER: 'YIGA-ZYUSER-MASTER-2026-KEY',
-  USER_TRIAL_3M: 'ZY-TRIAL-3M',
+  USER_3M: 'YIGA-ZYUSER-3M-2026-KEY',
 };
-
-const TRIAL_3M_STORAGE_KEY = 'yiga_trial_3m_activated_at';
-
-/**
- * Retrieve or record the first activation timestamp for the 3-month trial key on this device.
- * Persisted separately so deleting & re-entering the key does not reset the 3-month countdown.
- */
-function getOrSetTrial3MActivatedAt(fallbackIso?: string): string {
-  try {
-    const stored = localStorage.getItem(TRIAL_3M_STORAGE_KEY);
-    if (stored && !Number.isNaN(new Date(stored).getTime())) {
-      return stored;
-    }
-    const initialIso =
-      fallbackIso && !Number.isNaN(new Date(fallbackIso).getTime())
-        ? fallbackIso
-        : new Date().toISOString();
-    localStorage.setItem(TRIAL_3M_STORAGE_KEY, initialIso);
-    return initialIso;
-  } catch {
-    return fallbackIso || new Date().toISOString();
-  }
-}
 
 /**
  * Verify license key offline
@@ -119,8 +96,7 @@ function getOrSetTrial3MActivatedAt(fallbackIso?: string): string {
 export function verifyLicenseKey(
   keyString: string,
   currentDeviceId: string,
-  clockWatermark: number,
-  existingActivatedAt?: string
+  clockWatermark: number
 ): { isValid: boolean; payload?: LicensePayload; errorReason?: string; isExpired?: boolean; isInGracePeriod?: boolean; daysRemaining?: number } {
   if (!keyString) {
     return { isValid: false, errorReason: 'Invalid License Key format' };
@@ -168,8 +144,8 @@ export function verifyLicenseKey(
     };
   }
 
-  // Check Universal 3-Month Trial User Key (any device, 3 months from first activation on device)
-  if (trimmedKey.toUpperCase() === HARDCODED_MASTER_KEYS.USER_TRIAL_3M) {
+  // Check Hardcoded 3-Month User License Key
+  if (trimmedKey === HARDCODED_MASTER_KEYS.USER_3M) {
     const nowMs = Date.now();
     if (nowMs < clockWatermark - 300000) {
       return {
@@ -178,43 +154,72 @@ export function verifyLicenseKey(
       };
     }
 
-    const issuedAt = getOrSetTrial3MActivatedAt(existingActivatedAt);
-    const expiryDate = new Date(issuedAt);
-    expiryDate.setMonth(expiryDate.getMonth() + 3);
-    const expiresAt = expiryDate.toISOString();
+    const activationStorageKey = `yiga_license_activation_${trimmedKey}`;
+    let issuedAt: string;
+    let expiresAt: string;
 
-    const expiresMs = expiryDate.getTime();
-    const diffMs = expiresMs - nowMs;
-    const isExpired = nowMs > expiresMs;
-    const daysRemaining = isExpired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    try {
+      const stored = localStorage.getItem(activationStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.issuedAt && parsed.expiresAt) {
+          issuedAt = parsed.issuedAt;
+          expiresAt = parsed.expiresAt;
+        } else {
+          throw new Error('Invalid activation record');
+        }
+      } else {
+        const now = new Date();
+        issuedAt = now.toISOString();
+        const expiry = new Date(now);
+        expiry.setMonth(expiry.getMonth() + 3);
+        expiresAt = expiry.toISOString();
+        localStorage.setItem(activationStorageKey, JSON.stringify({ issuedAt, expiresAt }));
+      }
+    } catch {
+      const now = new Date();
+      issuedAt = now.toISOString();
+      const expiry = new Date(now);
+      expiry.setMonth(expiry.getMonth() + 3);
+      expiresAt = expiry.toISOString();
+    }
 
-    const trialPayload: LicensePayload = {
-      licenseId: 'LIC-ZY-TRIAL-3M',
+    const user3mPayload: LicensePayload = {
+      licenseId: 'LIC-YIGA-USER-3M-2026',
       deviceId: currentDeviceId,
       licenseType: 'USER',
       issuedAt,
       expiresAt,
       version: 1,
-      holderName: '3个月体验用户',
+      holderName: 'YiGa 3-Month Learner',
     };
 
-    if (isExpired) {
+    const expiresMs = new Date(expiresAt).getTime();
+    const diffMs = expiresMs - nowMs;
+    const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    const GRACE_PERIOD_DAYS = 7;
+    const graceExpiresMs = expiresMs + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+    const isExpired = nowMs > expiresMs;
+    const isInGracePeriod = isExpired && nowMs <= graceExpiresMs;
+
+    if (isExpired && !isInGracePeriod) {
       return {
         isValid: false,
         isExpired: true,
         isInGracePeriod: false,
-        daysRemaining: 0,
-        payload: trialPayload,
-        errorReason: `3-month trial expired on ${expiryDate.toLocaleDateString()}.`,
+        daysRemaining,
+        payload: user3mPayload,
+        errorReason: `License expired on ${new Date(expiresAt).toLocaleDateString()} and 7-day grace period has passed.`,
       };
     }
 
     return {
       isValid: true,
-      isExpired: false,
-      isInGracePeriod: false,
+      isExpired,
+      isInGracePeriod,
       daysRemaining,
-      payload: trialPayload,
+      payload: user3mPayload,
     };
   }
 
@@ -297,16 +302,15 @@ export function verifyLicenseKey(
 export function buildLicenseData(
   keyString: string,
   currentDeviceId: string,
-  clockWatermark: number,
-  existingActivatedAt?: string
+  clockWatermark: number
 ): LicenseData | null {
-  const result = verifyLicenseKey(keyString, currentDeviceId, clockWatermark, existingActivatedAt);
+  const result = verifyLicenseKey(keyString, currentDeviceId, clockWatermark);
   if (!result.payload) return null;
 
   return {
     key: keyString,
     payload: result.payload,
-    activatedAt: existingActivatedAt || result.payload.issuedAt || new Date().toISOString(),
+    activatedAt: new Date().toISOString(),
     isValid: result.isValid,
     isExpired: result.isExpired || false,
     isInGracePeriod: result.isInGracePeriod || false,

@@ -294,7 +294,6 @@ export default function App() {
                 onUpdateSettings={handleUpdateSettings}
                 onOpenLicenseModal={() => setActiveTab('license')}
                 onResetData={handleResetData}
-                onNavigateTab={handleSelectTab}
               />
             )}
 

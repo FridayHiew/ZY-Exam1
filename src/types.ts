@@ -26,8 +26,9 @@ export interface LicenseData {
 
 export interface Question {
   id: string;
-  category: string;
+  category?: string;
   questionText: string;
+  passage?: string; // Optional passage for comprehension questions
   options: [string, string, string, string]; // Exactly 4 options A, B, C, D
   correctIndex: number; // 0, 1, 2, or 3
   explanation?: string;
@@ -36,7 +37,7 @@ export interface Question {
   knowledgeLevel?: string;
   questionType?: string;
   tags?: string[];
-  statements?: Record<string, string>;
+  statements?: string[];
   sourceReference?: string;
 }
 
@@ -44,6 +45,7 @@ export interface KnowledgeCollection {
   id: string;
   name: string;
   description?: string;
+  passage?: string; // Short article / reading passage for comprehension collections
   group?: string;
   version: number;
   difficulty?: string;
@@ -150,6 +152,7 @@ export interface ValidationReport {
   extractedQuestions: Question[];
   collectionName: string;
   collectionDescription?: string;
+  collectionPassage?: string;
   collectionDifficulty?: string;
   collectionGroup?: string;
   collectionVersion?: number;

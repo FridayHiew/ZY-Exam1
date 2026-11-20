@@ -41,7 +41,25 @@ export const Navigation: React.FC<NavigationProps> = ({
   const navItems = [
     { id: 'dashboard' as TabType, label: getTranslation(lang, 'dashboard'), icon: Home, isLocked: false },
     { id: 'library' as TabType, label: getTranslation(lang, 'library'), icon: BookOpen, isLocked: false },
+    ...(!isUserOrVip ? [{ 
+      id: 'import' as TabType, 
+      label: getTranslation(lang, 'import'), 
+      icon: PlusCircle, 
+      isLocked: !hasValidLicense  // Add Book 需要 license
+    }] : []),
     { id: 'analytics' as TabType, label: getTranslation(lang, 'analytics'), icon: BarChart3, isLocked: false },
+    { 
+      id: 'backup' as TabType, 
+      label: getTranslation(lang, 'backupRestore'), 
+      icon: HardDriveDownload, 
+      isLocked: !hasValidLicense  // Backup 需要 license
+    },
+    ...(isAdmin ? [{ 
+      id: 'admin' as TabType, 
+      label: getTranslation(lang, 'adminGenerator'), 
+      icon: KeyRound, 
+      isLocked: false 
+    }] : []),
     { id: 'settings' as TabType, label: getTranslation(lang, 'settings'), icon: Settings, isLocked: false },
   ];
 

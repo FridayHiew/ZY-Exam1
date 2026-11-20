@@ -1,10 +1,10 @@
 // ImportView.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppStorageState, KnowledgeCollection, ValidationReport } from '../types';
 import { parseJSONImport, parseZIPImport, parseCSVImport } from '../utils/importer';
 import { downloadSampleJSONTemplate, downloadSampleCSVTemplate, downloadSampleZIPTemplate } from '../utils/exporter';
 import { getTranslation } from '../utils/i18n';
-import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, FolderArchive, BookOpen, X } from 'lucide-react';
+import { UploadCloud, FileCode, CheckCircle2, Sparkles, Copy, Check, Paperclip, FolderArchive, X, BookOpen } from 'lucide-react';
 
 interface ImportViewProps {
   appState: AppStorageState;
@@ -23,152 +23,109 @@ export const ImportView: React.FC<ImportViewProps> = ({
   const licenseType = appState.license?.payload.licenseType;
   const isUserOrVip = licenseType === 'USER' || licenseType === 'VIP';
 
-  const reportRef = useRef<HTMLDivElement>(null);
-
   const [report, setReport] = useState<ValidationReport | null>(null);
   const [conflictStrategy, setConflictStrategy] = useState<'SKIP' | 'OVERWRITE' | 'IMPORT_NEW'>('IMPORT_NEW');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [successModalData, setSuccessModalData] = useState<{
-    collectionName: string;
-    questionCount: number;
-  } | null>(null);
+  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
   const [selectedDifficultyLevel, setSelectedDifficultyLevel] = useState<'beginner' | 'intermediate' | 'master'>('beginner');
-  const [selectedPromptFormat, setSelectedPromptFormat] = useState<'json' | 'csv'>('json');
-  const [copiedPromptType, setCopiedPromptType] = useState<'json' | 'csv' | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<'json' | 'csv'>('json');
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (report) {
+      setTimeout(() => {
+        reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [report]);
 
   const getPromptText = (level: 'beginner' | 'intermediate' | 'master', format: 'json' | 'csv') => {
-    const jsonSchema = `{
-  "collectionName": "Kosa Kata Bahasa Melayu (KSSR)",
+    if (format === 'json') {
+      if (level === 'beginner') {
+        return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided.
+
+Focus on basic principles, definitions, and essential concepts.
+
+1. Ensure approximately:
+- 70% standard A-D recall and definition questions
+- 20% simple multi-statement questions
+- 10% basic scenario or application questions
+
+2. Ensure:
+- Questions are clear and suitable for beginners.
+- Incorrect options should be reasonable but incorrect.
+- Explanations should explain why the correct answer is correct.
+
+3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+{
+  "collectionName": "华文阅读理解 - 小蜜蜂采蜜记",
   "version": 1,
-  "description": "Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.",
-  "group": "Malay",
+  "description": "小学华文阅读理解专项训练。包含短文及相关理解问题。",
+  "passage": "清晨，天刚蒙蒙亮，小蜜蜂黄黄就飞出了蜂巢。花园里开满了五颜六色的花朵，有红彤彤的玫瑰、黄澄澄的菊花，还有雪白的百合。黄黄在一朵朵花采蜜，它把花蜜存放在腿上的小篮子里。虽然很累，但想到能为蜂群酿出甜甜的蜂蜜，黄黄心里感到非常快乐。",
+  "group": "Chinese",
   "difficulty": "Tahun 2",
-  "tags": ["kosa-kata"],
+  "tags": ["阅读理解", "华文", "短文"],
   "questions": [
     {
-      "id": "ms-q001",
-      "category": "Sekolah & Rumah",
-      "questionText": "perpustakaan",
-      "statements": {},
-      "optionA": "prepustakaan",
-      "optionB": "perpustakan",
-      "optionC": "perpustakaan",
-      "optionD": "perpustakkaan",
-      "correctAnswer": "C",
-      "explanation": "图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）",
-      "sourceReference": "Buku Teks BM Tahun 3, Unit 4",
+      "id": "zh-q001",
+      "questionText": "根据短文，小蜜蜂黄黄是什么时候飞出蜂巢的？",
+      "statements": [],
+      "optionA": "中午太阳高照时",
+      "optionB": "清晨，天刚蒙蒙亮",
+      "optionC": "傍晚太阳落山时",
+      "optionD": "深夜月亮升起时",
+      "correctAnswer": "B",
+      "explanation": "短文第一句指出“清晨，天刚蒙蒙亮，小蜜蜂黄黄就飞出了蜂巢”。",
+      "sourceReference": "小学华文阅读理解",
       "imageFile": ""
     }
   ]
 }`;
-
-    const csvSchema = `Use the following format exactly:
-
-# collectionName: Kosa Kata Bahasa Melayu (KSSR)
-# version: 1
-# description: Latihan ejaan dan kosa kata Bahasa Melayu Sekolah Rendah (SK & SJKC) selaras dengan KSSR.
-# group: Malay
-# difficulty: Tahun 2
-# tags: kosa-kata
-
-ID,Category,QuestionText,Statements,OptionA,OptionB,OptionC,OptionD,CorrectAnswer,Explanation,SourceReference,ImageFile
-ms-q001,Sekolah & Rumah,perpustakaan,"{}",prepustakaan,perpustakan,perpustakaan,perpustakkaan,C,"图书馆（Library / Perpustakaan）。Maksud: Tempat membaca dan meminjam buku. 例句：Murid-murid membaca buku di perpustakaan.（同学们在图书馆看书。）","Buku Teks BM Tahun 3, Unit 4",""`;
-
-    if (level === 'beginner') {
-      if (format === 'json') {
-        return `Please generate a foundational, beginner-level learning collection in valid JSON format based on the attached document(s) / text provided.
-
-Focus on basic principles, definitions, essential concepts, and fundamental knowledge building. Answers should be clear and direct, reinforcing foundational understanding. Distractors should be plausible to test basic recall and understanding.
-
-
-1. Ensure approximately:
-- 50% standard A-D questions
-- 20% multi-statement reasoning questions
-- 20% scenario-based questions
-- 10% basic analysis questions
-
-2. Ensure:
-- Answers reinforce core concepts and key terminology.
-- Incorrect options should be reasonable but clearly incorrect upon reflection.
-- Explanations should explain why the correct answer is correct.
-
-
-3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
-${jsonSchema}`;
-      } else {
-        return `Please generate a foundational, beginner-level learning collection in valid CSV format based on the attached document(s) / text provided.
-
-Focus on basic principles, definitions, essential concepts, and fundamental knowledge building. Answers should be clear and direct, reinforcing foundational understanding. Distractors should be plausible to test basic recall and understanding.
-
-
-1. Ensure approximately:
-- 50% standard A-D questions
-- 20% multi-statement reasoning questions
-- 20% scenario-based questions
-- 10% basic analysis questions
-
-2. Ensure:
-- Answers reinforce core concepts and key terminology.
-- Incorrect options should be reasonable but clearly incorrect upon reflection.
-- Explanations should explain why the correct answer is correct.
-
-
-3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
-${csvSchema}`;
-      }
-    } else if (level === 'intermediate') {
-      if (format === 'json') {
+      } else if (level === 'intermediate') {
         return `Please generate a practical, intermediate-level learning collection in valid JSON format based on the attached document(s) / text provided.
 
-Focus on procedural application, real-world scenario analysis, conceptual connections, and practical problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than simple memorization.
-
+Focus on practical application, understanding, procedural thinking, real-world scenarios, and problem-solving. Avoid obvious answers. Distractors should be reasonable and require understanding rather than simple memorization.
 
 1. Ensure approximately:
-- 35% standard A-D questions
-- 35% multi-statement reasoning questions
+- 50% standard A-D questions
+- 30% multi-statement reasoning questions
 - 20% scenario-based questions
-- 10% applied analysis questions
 
 2. Ensure:
-- Answers cannot be found by simple keyword matching alone.
-- Incorrect options should be reasonable and plausible based on common misconceptions.
+- Answers cannot be found by keyword matching alone.
+- Incorrect options should be reasonable but incorrect.
 - Explanations should explain why the correct answer is correct.
-
 
 3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
-${jsonSchema}`;
+{
+  "collectionName": "Pemahaman Bahasa Melayu - Rumah Saya",
+  "version": 1,
+  "description": "Latihan pemahaman Bahasa Melayu Sekolah Rendah.",
+  "passage": "Rumah Encik Karim terletak di Kampung Murni. Di sekeliling rumahnya terdapat banyak pokok buah-buahan seperti rambutan, durian and manggis. Setiap petang, Encik Karim dan keluarganya akan berkumpul di halaman rumah sambil menikmati buah-buahan segar.",
+  "group": "Malay",
+  "difficulty": "Standard 4",
+  "tags": ["pemahaman", "bahasa-melayu"],
+  "questions": [
+    {
+      "id": "bm-q001",
+      "questionText": "Di manakah rumah Encik Karim terletak?",
+      "statements": [],
+      "optionA": "Taman Idaman",
+      "optionB": "Kampung Murni",
+      "optionC": "Bandar Utama",
+      "optionD": "Desa Indah",
+      "correctAnswer": "B",
+      "explanation": "Petikan menyatakan rumah Encik Karim terletak di Kampung Murni.",
+      "sourceReference": "Buku Teks BM Tahun 4",
+      "imageFile": ""
+    }
+  ]
+}`;
       } else {
-        return `Please generate a practical, intermediate-level learning collection in valid CSV format based on the attached document(s) / text provided.
-
-Focus on procedural application, real-world scenario analysis, conceptual connections, and practical problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than simple memorization.
-
-
-1. Ensure approximately:
-- 35% standard A-D questions
-- 35% multi-statement reasoning questions
-- 20% scenario-based questions
-- 10% applied analysis questions
-
-2. Ensure:
-- Answers cannot be found by simple keyword matching alone.
-- Incorrect options should be reasonable and plausible based on common misconceptions.
-- Explanations should explain why the correct answer is correct.
-
-
-3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
-
-${csvSchema}`;
-      }
-    } else {
-      if (format === 'json') {
         return `Please generate an expert, master-level professional assessment collection in valid JSON format based on the attached document(s) / text provided.
 
 Focus on deep analysis, critical thinking, complex reasoning, scenario evaluation, and expert-level problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than memorization.
-
 
 1. Ensure approximately:
 - 30% standard A-D questions
@@ -181,16 +138,92 @@ Focus on deep analysis, critical thinking, complex reasoning, scenario evaluatio
 - Incorrect options should be reasonable but incorrect.
 - Explanations should explain why the correct answer is correct.
 
-
 3. Strictly output ONLY a single raw JSON object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+{
+  "collectionName": "English Reading Comprehension - Space Exploration",
+  "version": 1,
+  "description": "Advanced reading comprehension exercise for Year 6.",
+  "passage": "Astronauts undergo rigorous physical and psychological training before embarking on space missions. Inside the space station, microgravity allows them to float freely, but it also causes muscle loss over time. Therefore, astronauts must exercise for at least two hours daily using special equipment.",
+  "group": "English",
+  "difficulty": "Standard 6",
+  "tags": ["comprehension", "english", "science"],
+  "questions": [
+    {
+      "id": "en-q001",
+      "questionText": "Why must astronauts exercise daily in space?",
+      "statements": [],
+      "optionA": "To keep themselves warm",
+      "optionB": "To prevent muscle loss caused by microgravity",
+      "optionC": "To prepare for space walks",
+      "optionD": "To pass their spare time",
+      "correctAnswer": "B",
+      "explanation": "The text states microgravity causes muscle loss, so astronauts exercise to prevent it.",
+      "sourceReference": "English Textbook Year 6",
+      "imageFile": ""
+    }
+  ]
+}`;
+      }
+    } else {
+      if (level === 'beginner') {
+        return `Please generate a foundational, beginner-level learning collection in valid CSV format based on the attached document(s) / text provided.
 
-${jsonSchema}`;
+Focus on basic principles, definitions, and essential concepts.
+
+1. Ensure approximately:
+- 70% standard A-D recall and definition questions
+- 20% simple multi-statement questions
+- 10% basic scenario or application questions
+
+2. Ensure:
+- Questions are clear and suitable for beginners.
+- Incorrect options should be reasonable but incorrect.
+- Explanations should explain why the correct answer is correct.
+
+3. Strictly output ONLY a single raw CSV object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+# collectionName: 华文阅读理解 - 小蜜蜂采蜜记
+# version: 1
+# description: 小学华文阅读理解专项训练。包含短文及相关理解问题。
+# group: Chinese
+# difficulty: 二年级
+# tags: 阅读理解,华文,短文
+# passage: "清晨，天刚蒙蒙亮，小蜜蜂黄黄就飞出了蜂巢。花园里开满了五颜六色的花朵，有红彤彤的玫瑰、黄澄澄的菊花，还有雪白的百合。黄黄在一朵朵花采蜜，它把花蜜存放在腿上的小篮子里。虽然很累，但想到能为蜂群酿出甜甜的蜂蜜，黄黄心里感到非常快乐。"
+
+ID,Category,Question Text,statements,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Source Reference,Image File
+"zh-q001","阅读理解","根据短文，小蜜蜂黄黄是什么时候飞出蜂巢的？","","中午太阳高照时","清晨，天刚蒙蒙亮","傍晚太阳落山时","深夜月亮升起时","B","短文第一句指出“清晨，天刚蒙蒙亮，小蜜蜂黄黄就飞出了蜂巢”。","小学华文阅读理解",""`;
+      } else if (level === 'intermediate') {
+        return `Please generate a practical, intermediate-level learning collection in valid CSV format based on the attached document(s) / text provided.
+
+Focus on practical application, understanding, procedural thinking, real-world scenarios, and problem-solving. Avoid obvious answers. Distractors should be reasonable and require understanding rather than simple memorization.
+
+1. Ensure approximately:
+- 50% standard A-D questions
+- 30% multi-statement reasoning questions
+- 20% scenario-based questions
+
+2. Ensure:
+- Answers cannot be found by keyword matching alone.
+- Incorrect options should be reasonable but incorrect.
+- Explanations should explain why the correct answer is correct.
+
+3. Strictly output ONLY a single raw CSV object (no markdown formatting, no code block markers, no intro text) following this exact schema:
+
+# collectionName: Pemahaman Bahasa Melayu - Rumah Saya
+# version: 1
+# description: Latihan pemahaman Bahasa Melayu Sekolah Rendah.
+# group: Malay
+# difficulty: Standard 4
+# tags: pemahaman,bahasa-melayu
+# passage: "Rumah Encik Karim terletak di Kampung Murni. Di sekeliling rumahnya terdapat banyak pokok buah-buahan seperti rambutan, durian and manggis. Setiap petang, Encik Karim dan keluarganya akan berkumpul di halaman rumah sambil menikmati buah-buahan segar."
+
+ID,Category,Question Text,statements,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Source Reference,Image File
+"bm-q001","Pemahaman","Di manakah rumah Encik Karim terletak？","","Taman Idaman","Kampung Murni","Bandar Utama","Desa Indah","B","Petikan menyatakan rumah Encik Karim terletak di Kampung Murni.","Buku Teks BM Tahun 4",""`;
       } else {
         return `Please generate an expert, master-level professional assessment collection in valid CSV format based on the attached document(s) / text provided.
 
 Focus on deep analysis, critical thinking, complex reasoning, scenario evaluation, and expert-level problem solving. Avoid obvious answers. Distractors should be realistic and require understanding rather than memorization.
 
-
 1. Ensure approximately:
 - 30% standard A-D questions
 - 40% multi-statement reasoning questions
@@ -202,28 +235,37 @@ Focus on deep analysis, critical thinking, complex reasoning, scenario evaluatio
 - Incorrect options should be reasonable but incorrect.
 - Explanations should explain why the correct answer is correct.
 
+3. Strictly output ONLY a single raw CSV object (no markdown formatting, no code block markers, no intro text) following this exact schema:
 
-3. Strictly output ONLY standard CSV format (no markdown formatting, no code block markers, no intro text) following this exact schema:
+# collectionName: English Reading Comprehension - Space Exploration
+# version: 1
+# description: Advanced reading comprehension exercise for Year 6.
+# group: English
+# difficulty: Standard 6
+# tags: comprehension,english,science
+# passage: "Astronauts undergo rigorous physical and psychological training before embarking on space missions. Inside the space station, microgravity allows them to float freely, but it also causes muscle loss over time. Therefore, astronauts must exercise for at least two hours daily using special equipment."
 
-${csvSchema}`;
+ID,Category,Question Text,statements,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Source Reference,Image File
+"en-q001","Comprehension","Why must astronauts exercise daily in space？","","To keep themselves warm","To prevent muscle loss caused by microgravity","To prepare for space walks","To pass their spare time","B","The text states microgravity causes muscle loss, so astronauts exercise to prevent it.","English Textbook Year 6",""`;
       }
     }
   };
 
-  const aiPromptText = getPromptText(selectedDifficultyLevel, selectedPromptFormat);
+  const aiPromptText = getPromptText(selectedDifficultyLevel, selectedFormat);
 
-  const handleCopyPrompt = (format: 'json' | 'csv') => {
-    const textToCopy = getPromptText(selectedDifficultyLevel, format);
-    navigator.clipboard.writeText(textToCopy);
-    setSelectedPromptFormat(format);
-    setCopiedPromptType(format);
-    setTimeout(() => setCopiedPromptType(null), 2500);
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(aiPromptText);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2500);
   };
 
-  const processFile = async (file: File) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setIsProcessing(true);
     setReport(null);
-    setSuccessModalData(null);
+    setImportSuccessMsg(null);
 
     try {
       const filename = file.name.toLowerCase();
@@ -245,46 +287,10 @@ ${csvSchema}`;
       }
 
       setReport(res);
-
-      // Smooth scroll to validation report section automatically
-      setTimeout(() => {
-        if (reportRef.current) {
-          reportRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 150);
     } catch (err: any) {
       alert(t('backupError').replace('{error}', err.message));
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await processFile(file);
-    e.target.value = '';
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      processFile(file);
     }
   };
 
@@ -295,15 +301,17 @@ ${csvSchema}`;
     const existingIndex = collections.findIndex((c) => c.name.toLowerCase() === colName.toLowerCase());
 
     let updatedCollections = [...collections];
-    let finalNameUsed = colName;
+    let finalColName = colName;
 
     if (existingIndex >= 0 && conflictStrategy === 'SKIP') {
       alert(lang === 'zh' ? `题库集合“${colName}”已存在，根据冲突策略已跳过导入。` : `Collection "${colName}" already exists. Import skipped based on strategy.`);
       return;
     } else if (existingIndex >= 0 && conflictStrategy === 'OVERWRITE') {
+      finalColName = collections[existingIndex].name;
       updatedCollections[existingIndex] = {
         ...updatedCollections[existingIndex],
         description: report.collectionDescription || updatedCollections[existingIndex].description,
+        passage: report.collectionPassage || report.extractedQuestions.find(q => q.passage)?.passage || updatedCollections[existingIndex].passage,
         group: report.collectionGroup || updatedCollections[existingIndex].group || 'General',
         difficulty: report.collectionDifficulty || updatedCollections[existingIndex].difficulty || 'Standard 1',
         version: report.collectionVersion || updatedCollections[existingIndex].version || 1,
@@ -313,13 +321,14 @@ ${csvSchema}`;
         questions: report.extractedQuestions,
         categories: Array.from(new Set(report.extractedQuestions.map((q) => q.category))),
       };
-      finalNameUsed = updatedCollections[existingIndex].name;
     } else {
-      finalNameUsed = existingIndex >= 0 ? `${colName} (${new Date().toLocaleTimeString()})` : colName;
+      const finalName = existingIndex >= 0 ? `${colName} (${new Date().toLocaleTimeString()})` : colName;
+      finalColName = finalName;
       const newCollection: KnowledgeCollection = {
         id: `col_${Date.now()}`,
-        name: finalNameUsed,
+        name: finalName,
         description: report.collectionDescription || (lang === 'zh' ? `包含 ${report.extractedQuestions.length} 道题目的导入题库。` : `Imported with ${report.extractedQuestions.length} questions.`),
+        passage: report.collectionPassage || report.extractedQuestions.find(q => q.passage)?.passage,
         group: report.collectionGroup || 'General',
         difficulty: report.collectionDifficulty || 'Standard 1',
         version: report.collectionVersion || 1,
@@ -334,13 +343,11 @@ ${csvSchema}`;
     }
 
     onUpdateCollections(updatedCollections);
+    const successMsg = t('importSuccess')
+      .replace('{count}', String(report.extractedQuestions.length))
+      .replace('{name}', finalColName);
 
-    // Show elegant Modal Pop-up Box
-    setSuccessModalData({
-      collectionName: finalNameUsed,
-      questionCount: report.extractedQuestions.length,
-    });
-
+    setImportSuccessMsg(successMsg);
     setReport(null);
   };
 
@@ -364,16 +371,7 @@ ${csvSchema}`;
       ) : (
         <>
           {/* File Upload Dropzone */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`p-8 bg-white dark:bg-[#242824] border-2 border-dashed rounded-3xl text-center transition-all ${
-              isDragging
-                ? 'border-[#5A6D5B] bg-[#5A6D5B]/5 scale-[1.01]'
-                : 'border-[#E8E2D2] dark:border-[#353B35] hover:border-[#5A6D5B]'
-            }`}
-          >
+          <div className="p-8 bg-white dark:bg-[#242824] border-2 border-dashed border-[#E8E2D2] dark:border-[#353B35] rounded-3xl text-center hover:border-[#5A6D5B] transition-colors">
             <div className="w-14 h-14 rounded-2xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center mx-auto mb-3">
               <UploadCloud className="w-7 h-7" />
             </div>
@@ -398,10 +396,7 @@ ${csvSchema}`;
 
           {/* Pre-Import Validation & Preview Report */}
           {report && (
-            <div
-              ref={reportRef}
-              className="p-6 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl space-y-6 shadow-sm scroll-mt-6"
-            >
+            <div ref={reportRef} className="p-6 bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-2xl space-y-6 shadow-sm">
               <div className="flex items-center justify-between border-b border-[#E8E2D2] dark:border-[#353B35] pb-4">
                 <div>
                   <h3 className="font-bold text-base text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
@@ -502,7 +497,7 @@ ${csvSchema}`;
 
           {/* AI Prompt Template Section */}
           <div className="p-5 bg-white dark:bg-[#242824] rounded-2xl border border-[#E8E2D2] dark:border-[#353B35] shadow-sm space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E2D2] dark:border-[#353B35] pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-[#5A6D5B]/10 text-[#5A6D5B] dark:text-[#A3B5A4] flex items-center justify-center shrink-0">
                   <Sparkles className="w-5 h-5" />
@@ -517,75 +512,75 @@ ${csvSchema}`;
                 </div>
               </div>
 
-              {/* Two buttons to select & copy CSV or JSON prompts */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => handleCopyPrompt('json')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
-                    selectedPromptFormat === 'json'
-                      ? 'bg-[#5A6D5B] text-white border-transparent shadow-sm'
-                      : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
-                  }`}
-                >
-                  {copiedPromptType === 'json' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>{lang === 'zh' ? '已复制 JSON 提示词' : 'JSON Prompt Copied'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>{lang === 'zh' ? '复制 JSON 提示词' : 'Copy JSON Prompt'}</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => handleCopyPrompt('csv')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
-                    selectedPromptFormat === 'csv'
-                      ? 'bg-[#5A6D5B] text-white border-transparent shadow-sm'
-                      : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] border-[#E8E2D2] dark:border-[#353B35] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
-                  }`}
-                >
-                  {copiedPromptType === 'csv' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>{lang === 'zh' ? '已复制 CSV 提示词' : 'CSV Prompt Copied'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>{lang === 'zh' ? '复制 CSV 提示词' : 'Copy CSV Prompt'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={handleCopyPrompt}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shrink-0 ${
+                  copiedPrompt
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-[#5A6D5B] hover:bg-[#485749] text-white shadow-sm'
+                }`}
+              >
+                {copiedPrompt ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>{t('copiedToClipboard')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>{t('copyPrompt')}</span>
+                  </>
+                )}
+              </button>
             </div>
 
-            <div className="flex items-center gap-2 pb-1">
-              <span className="text-xs font-semibold text-[#7C776B] dark:text-[#A09886] mr-1">{lang === 'zh' ? '目标难度:' : 'Target Level:'}</span>
-              {(['beginner', 'intermediate', 'master'] as const).map((lvl) => {
-                const isActive = selectedDifficultyLevel === lvl;
-                const labels = {
-                  beginner: t('easy'),
-                  intermediate: t('medium'),
-                  master: t('hard'),
-                };
-                return (
-                  <button
-                    key={lvl}
-                    onClick={() => setSelectedDifficultyLevel(lvl)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      isActive
-                        ? 'bg-[#5A6D5B] text-white shadow-sm'
-                        : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
-                    }`}
-                  >
-                    {labels[lvl]}
-                  </button>
-                );
-              })}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E2D2] dark:border-[#353B35] pb-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-[#7C776B] dark:text-[#A09886] mr-1">{lang === 'zh' ? '目标难度:' : 'Target Level:'}</span>
+                {(['beginner', 'intermediate', 'master'] as const).map((lvl) => {
+                  const isActive = selectedDifficultyLevel === lvl;
+                  const labels = {
+                    beginner: t('easy'),
+                    intermediate: t('medium'),
+                    master: t('hard'),
+                  };
+                  return (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => setSelectedDifficultyLevel(lvl)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#5A6D5B] text-white shadow-sm'
+                          : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
+                      }`}
+                    >
+                      {labels[lvl]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#7C776B] dark:text-[#A09886] mr-1">{lang === 'zh' ? '输出格式:' : 'Output Format:'}</span>
+                {(['json', 'csv'] as const).map((fmt) => {
+                  const isActive = selectedFormat === fmt;
+                  return (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setSelectedFormat(fmt)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#5A6D5B] text-white shadow-sm'
+                          : 'bg-[#F5F2EA] dark:bg-[#2D322D] text-[#6B6559] dark:text-[#A09886] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35]'
+                      }`}
+                    >
+                      {fmt}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="relative">
@@ -599,8 +594,8 @@ ${csvSchema}`;
               <span>
                 <strong>{lang === 'zh' ? '使用说明：' : 'Instruction:'}</strong>{' '}
                 {lang === 'zh'
-                  ? `复制上方 ${selectedPromptFormat.toUpperCase()} 提示词，附带您的学习资料或 PDF 文件发送给 ChatGPT、Gemini 或 Claude 即可生成 standard ${selectedPromptFormat.toUpperCase()} 题库数据。`
-                  : `Copy the ${selectedPromptFormat.toUpperCase()} prompt above, attach your study files/PDFs, and paste into ChatGPT or Gemini to receive a ready-to-import ${selectedPromptFormat.toUpperCase()} structure.`}
+                  ? `复制上方提示词，附带您的学习资料或 PDF 文件发送给 ChatGPT、Gemini 或 Claude 即可生成 standard ${selectedFormat.toUpperCase()} 题库。`
+                  : `Copy the prompt above, attach your study files/PDFs, and paste into ChatGPT or Gemini to receive a ready-to-import ${selectedFormat.toUpperCase()} package.`}
               </span>
             </div>
           </div>
@@ -640,43 +635,47 @@ ${csvSchema}`;
             </div>
           </div>
 
-          {/* Import Success Centered Modal Popup */}
-          {successModalData && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-6 transform transition-all scale-100">
-                {/* Success Icon */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner border border-emerald-200 dark:border-emerald-800/50">
-                  <CheckCircle2 className="w-9 h-9 sm:w-11 sm:h-11" />
+          {/* Import Success Modal Popup Box */}
+          {importSuccessMsg && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white dark:bg-[#242824] border border-[#E8E2D2] dark:border-[#353B35] rounded-3xl p-6 sm:p-8 shadow-2xl max-w-md w-full text-center relative space-y-5 animate-scaleUp">
+                <button
+                  onClick={() => setImportSuccessMsg(null)}
+                  className="absolute top-4 right-4 p-1.5 rounded-full text-[#7C776B] dark:text-[#A09886] hover:bg-[#F5F2EA] dark:hover:bg-[#353B35] transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-9 h-9" />
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#3E4A3E] dark:text-[#F5F2EA] font-serif">
-                    {lang === 'zh' ? '导入成功！' : lang === 'ms' ? 'Berjaya Diimport!' : 'Import Successful!'}
+                  <h3 className="text-lg font-bold text-[#2D2A26] dark:text-[#EAE7DF] font-serif">
+                    {lang === 'zh' ? '导入成功！' : 'Import Successful!'}
                   </h3>
-                  <p className="text-xs sm:text-sm font-semibold text-[#5A6D5B] dark:text-[#A3B5A4] bg-[#5A6D5B]/10 dark:bg-[#5A6D5B]/20 p-3.5 rounded-2xl border border-[#5A6D5B]/20 leading-relaxed">
-                    {t('importSuccess')
-                      .replace('{count}', successModalData.questionCount.toString())
-                      .replace('{name}', successModalData.collectionName)}
+                  <p className="text-sm text-[#5A6D5B] dark:text-[#A3B5A4] font-medium leading-relaxed">
+                    {importSuccessMsg}
                   </p>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <button
                     onClick={() => {
-                      setSuccessModalData(null);
+                      setImportSuccessMsg(null);
                       onNavigateTab('library');
                     }}
-                    className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#5A6D5B] hover:bg-[#485749] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#5A6D5B] hover:bg-[#4A5D4B] text-white rounded-xl text-sm font-semibold shadow-md transition-all cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
                     <span>{t('goToLibrary')}</span>
                   </button>
                   <button
-                    onClick={() => setSuccessModalData(null)}
-                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#F5F2EA] dark:bg-[#2D322D] hover:bg-[#EAE5D8] dark:hover:bg-[#353B35] text-[#7C776B] dark:text-[#A09886] font-bold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer border border-[#E8E2D2] dark:border-[#353B35]"
+                    onClick={() => setImportSuccessMsg(null)}
+                    className="w-full sm:w-auto px-5 py-2.5 border border-[#E8E2D2] dark:border-[#353B35] text-[#6B6559] dark:text-[#A09886] hover:bg-[#F5F2EA] dark:hover:bg-[#353B35] rounded-xl text-sm font-semibold transition-colors cursor-pointer"
                   >
-                    {lang === 'zh' ? '关闭' : lang === 'ms' ? 'Tutup' : 'Close'}
+                    {lang === 'zh' ? '关闭' : 'Close'}
                   </button>
                 </div>
               </div>
