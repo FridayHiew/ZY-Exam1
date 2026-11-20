@@ -229,6 +229,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             {t('libraryDesc')}
           </p>
         </div>
+        
+        <button
+          onClick={() => onNavigateTab('import')}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#5A6D5B] text-white font-semibold text-xs rounded-xl shadow-sm hover:bg-[#485749] transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          {lang === 'zh' ? '添加题库 (Add Book)' : 'Add Book'}
+        </button>
       </div>
 
       {/* Search & Filters Bar */}

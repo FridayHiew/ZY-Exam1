@@ -82,12 +82,36 @@ export function generateLicenseKey(
 }
 
 /**
- * Hardcoded Master Keys for Admin & User activation
+ * Hardcoded Master & Promotional Keys for Admin & User activation
  */
 export const HARDCODED_MASTER_KEYS = {
   ADMIN: 'YIGA-ZYADMIN-MASTER-2026-KEY',
   USER: 'YIGA-ZYUSER-MASTER-2026-KEY',
+  USER_TRIAL_3M: 'ZY-TRIAL-3M',
 };
+
+const TRIAL_3M_STORAGE_KEY = 'yiga_trial_3m_activated_at';
+
+/**
+ * Retrieve or record the first activation timestamp for the 3-month trial key on this device.
+ * Persisted separately so deleting & re-entering the key does not reset the 3-month countdown.
+ */
+function getOrSetTrial3MActivatedAt(fallbackIso?: string): string {
+  try {
+    const stored = localStorage.getItem(TRIAL_3M_STORAGE_KEY);
+    if (stored && !Number.isNaN(new Date(stored).getTime())) {
+      return stored;
+    }
+    const initialIso =
+      fallbackIso && !Number.isNaN(new Date(fallbackIso).getTime())
+        ? fallbackIso
+        : new Date().toISOString();
+    localStorage.setItem(TRIAL_3M_STORAGE_KEY, initialIso);
+    return initialIso;
+  } catch {
+    return fallbackIso || new Date().toISOString();
+  }
+}
 
 /**
  * Verify license key offline
@@ -95,7 +119,8 @@ export const HARDCODED_MASTER_KEYS = {
 export function verifyLicenseKey(
   keyString: string,
   currentDeviceId: string,
-  clockWatermark: number
+  clockWatermark: number,
+  existingActivatedAt?: string
 ): { isValid: boolean; payload?: LicensePayload; errorReason?: string; isExpired?: boolean; isInGracePeriod?: boolean; daysRemaining?: number } {
   if (!keyString) {
     return { isValid: false, errorReason: 'Invalid License Key format' };
@@ -140,6 +165,56 @@ export function verifyLicenseKey(
       isInGracePeriod: false,
       daysRemaining: 26800,
       payload: masterUserPayload,
+    };
+  }
+
+  // Check Universal 3-Month Trial User Key (any device, 3 months from first activation on device)
+  if (trimmedKey.toUpperCase() === HARDCODED_MASTER_KEYS.USER_TRIAL_3M) {
+    const nowMs = Date.now();
+    if (nowMs < clockWatermark - 300000) {
+      return {
+        isValid: false,
+        errorReason: 'System clock tampering detected! Device time is set prior to previous app usage timestamp.',
+      };
+    }
+
+    const issuedAt = getOrSetTrial3MActivatedAt(existingActivatedAt);
+    const expiryDate = new Date(issuedAt);
+    expiryDate.setMonth(expiryDate.getMonth() + 3);
+    const expiresAt = expiryDate.toISOString();
+
+    const expiresMs = expiryDate.getTime();
+    const diffMs = expiresMs - nowMs;
+    const isExpired = nowMs > expiresMs;
+    const daysRemaining = isExpired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+    const trialPayload: LicensePayload = {
+      licenseId: 'LIC-ZY-TRIAL-3M',
+      deviceId: currentDeviceId,
+      licenseType: 'USER',
+      issuedAt,
+      expiresAt,
+      version: 1,
+      holderName: '3个月体验用户',
+    };
+
+    if (isExpired) {
+      return {
+        isValid: false,
+        isExpired: true,
+        isInGracePeriod: false,
+        daysRemaining: 0,
+        payload: trialPayload,
+        errorReason: `3-month trial expired on ${expiryDate.toLocaleDateString()}.`,
+      };
+    }
+
+    return {
+      isValid: true,
+      isExpired: false,
+      isInGracePeriod: false,
+      daysRemaining,
+      payload: trialPayload,
     };
   }
 
@@ -222,15 +297,16 @@ export function verifyLicenseKey(
 export function buildLicenseData(
   keyString: string,
   currentDeviceId: string,
-  clockWatermark: number
+  clockWatermark: number,
+  existingActivatedAt?: string
 ): LicenseData | null {
-  const result = verifyLicenseKey(keyString, currentDeviceId, clockWatermark);
+  const result = verifyLicenseKey(keyString, currentDeviceId, clockWatermark, existingActivatedAt);
   if (!result.payload) return null;
 
   return {
     key: keyString,
     payload: result.payload,
-    activatedAt: new Date().toISOString(),
+    activatedAt: existingActivatedAt || result.payload.issuedAt || new Date().toISOString(),
     isValid: result.isValid,
     isExpired: result.isExpired || false,
     isInGracePeriod: result.isInGracePeriod || false,

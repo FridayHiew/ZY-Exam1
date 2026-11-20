@@ -48,7 +48,12 @@ export function loadAppState(): AppStorageState {
   // Default initial license: None by default. User must activate to unlock premium modules.
   let activeLicense: LicenseData | null = null;
   if (state.license?.key) {
-    activeLicense = buildLicenseData(state.license.key, deviceId, newWatermark);
+    activeLicense = buildLicenseData(
+      state.license.key,
+      deviceId,
+      newWatermark,
+      state.license.activatedAt
+    );
   }
 
   const collections: KnowledgeCollection[] = Array.isArray(state.collections)
@@ -77,9 +82,30 @@ export function loadAppState(): AppStorageState {
 export async function loadAppStateAsync(): Promise<AppStorageState> {
   const idbState = await loadStateFromIndexedDB();
   if (idbState && Array.isArray(idbState.collections)) {
+    const deviceId = getOrCreateDeviceId();
+    const nowMs = Date.now();
+    const newWatermark = Math.max(idbState.clockWatermark || 0, nowMs);
+
+    let revalidatedLicense: LicenseData | null = null;
+    if (idbState.license?.key) {
+      revalidatedLicense = buildLicenseData(
+        idbState.license.key,
+        deviceId,
+        newWatermark,
+        idbState.license.activatedAt
+      );
+    }
+
+    const hydratedState: AppStorageState = {
+      ...idbState,
+      deviceId,
+      clockWatermark: newWatermark,
+      license: revalidatedLicense,
+    };
+
     // Save to localStorage as synced cache
-    saveAppState(idbState);
-    return idbState;
+    saveAppState(hydratedState);
+    return hydratedState;
   }
 
   // Fallback to synchronous load & seed IndexedDB
